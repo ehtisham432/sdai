@@ -1,5 +1,0 @@
-- [x] Project scaffolded: Spring Boot inventory management for multiple companies
-- [ ] Add entities: Company, Product, Inventory, User
-- [ ] Add REST controllers for CRUD operations
-- [ ] Add repository interfaces
-- [ ] Test and document endpoints
