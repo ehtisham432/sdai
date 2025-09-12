@@ -12,6 +12,12 @@ public class User {
     private String username;
     private String email;
 
+    @Column(unique = true, nullable = false)
+    private String loginName;
+
+    @Column(nullable = false)
+    private String password;
+
     @ManyToOne
     @JoinColumn(name = "company_id")
     private Company company;
@@ -38,6 +44,22 @@ public class User {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public String getLoginName() {
+        return loginName;
+    }
+
+    public void setLoginName(String loginName) {
+        this.loginName = loginName;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 
     public Company getCompany() {

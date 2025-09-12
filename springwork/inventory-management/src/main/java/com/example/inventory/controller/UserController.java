@@ -1,6 +1,10 @@
 package com.example.inventory.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.example.inventory.User;
@@ -23,15 +27,28 @@ public class UserController {
     }
 
     @PostMapping
-    public User createUser(@RequestBody User user) {
+    public ResponseEntity<?> createUser(@RequestBody User user) {
         if (user.getCompany() != null && user.getCompany().getId() != null) {
-            System.out.println(user.getCompany().getId());
             user.setCompany(companyRepository.findById(user.getCompany().getId()).orElse(null));
-        } 
-        if(user.getCompany() == null) {
+        }
+        if (user.getCompany() == null) {
             System.out.println("Company is null");
         }
-        return userRepository.save(user);
+        // Enforce unique loginName
+        if (user.getLoginName() == null || user.getLoginName().isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("loginName is required");
+        }
+        if (userRepository.findByLoginName(user.getLoginName()) != null) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("loginName already exists");
+        }
+        if (user.getPassword() == null || user.getPassword().isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("password is required");
+        }
+        try {
+            return ResponseEntity.ok(userRepository.save(user));
+        } catch (DataIntegrityViolationException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("loginName must be unique");
+        }
     }
 
     @GetMapping("/{id}")
@@ -40,12 +57,26 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
-    public User updateUser(@PathVariable Long id, @RequestBody User user) {
+    public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody User user) {
         user.setId(id);
         if (user.getCompany() != null && user.getCompany().getId() != null) {
             user.setCompany(companyRepository.findById(user.getCompany().getId()).orElse(null));
         }
-        return userRepository.save(user);
+        if (user.getLoginName() == null || user.getLoginName().isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("loginName is required");
+        }
+        User existing = userRepository.findByLoginName(user.getLoginName());
+        if (existing != null && !existing.getId().equals(id)) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("loginName already exists");
+        }
+        if (user.getPassword() == null || user.getPassword().isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("password is required");
+        }
+        try {
+            return ResponseEntity.ok(userRepository.save(user));
+        } catch (DataIntegrityViolationException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("loginName must be unique");
+        }
     }
 
     @DeleteMapping("/{id}")
