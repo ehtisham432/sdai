@@ -42,8 +42,24 @@
             </form>
         </div>
     <div class="bg-white shadow rounded p-4 sm:p-6">
-            <h2 class="text-xl font-semibold mb-4">Users List</h2>
-            <div class="overflow-x-auto">
+        <h2 class="text-xl font-semibold mb-4">Users List</h2>
+        <!-- Search/Filter UI -->
+        <form id="userSearchForm" class="grid grid-cols-2 sm:grid-cols-8 gap-2 mb-4 items-end w-full">
+            <label for="searchUsername" class="block text-xs text-gray-600 col-span-1 self-center">Username</label>
+            <input type="text" id="searchUsername" class="border rounded px-2 py-1 w-full col-span-1" placeholder="Username">
+            <label for="searchLoginName" class="block text-xs text-gray-600 col-span-1 self-center">Login Name</label>
+            <input type="text" id="searchLoginName" class="border rounded px-2 py-1 w-full col-span-1" placeholder="Login Name">
+            <label for="searchEmail" class="block text-xs text-gray-600 col-span-1 self-center">Email</label>
+            <input type="text" id="searchEmail" class="border rounded px-2 py-1 w-full col-span-1" placeholder="Email">
+            <label for="searchCompanyId" class="block text-xs text-gray-600 col-span-1 self-center">Company</label>
+            <select id="searchCompanyId" class="border rounded px-2 py-1 w-full col-span-1">
+                <option value="">All</option>
+            </select>
+            <div class="col-span-2 sm:col-span-6"></div>
+            <button type="submit" class="bg-blue-500 text-white px-3 py-1 rounded col-span-1">Search</button>
+            <button type="button" id="resetSearchBtn" class="bg-gray-400 text-white px-3 py-1 rounded col-span-1">Reset</button>
+        </form>
+        <div class="overflow-x-auto">
             <table class="min-w-full table-auto">
                 <thead>
                     <tr class="bg-gray-200">
@@ -59,8 +75,8 @@
                     <!-- Users will be populated here -->
                 </tbody>
             </table>
-            </div>
         </div>
+    </div>
     </div>
     <script>
         const apiUrl = '/users';
@@ -68,21 +84,32 @@
         const userForm = document.getElementById('userForm');
         const usersTable = document.getElementById('usersTable');
         const resetBtn = document.getElementById('resetBtn');
-        const companySelect = document.getElementById('companyId');
+    const companySelect = document.getElementById('companyId');
+    // For search filters
+    const searchCompanySelect = document.getElementById('searchCompanyId');
 
         function fetchCompanies() {
             fetch(companyApiUrl)
                 .then(res => res.json())
                 .then(companies => {
                     companySelect.innerHTML = '<option value="">Select Company</option>';
+                    searchCompanySelect.innerHTML = '<option value="">All</option>';
                     companies.forEach(company => {
                         companySelect.innerHTML += `<option value="${company.id}">${company.name}</option>`;
+                        searchCompanySelect.innerHTML += `<option value="${company.id}">${company.name}</option>`;
                     });
                 });
         }
 
-        function fetchUsers() {
-            fetch(apiUrl)
+        function fetchUsers(filters = {}) {
+            // Build query string from filters
+            const params = new URLSearchParams();
+            if (filters.username) params.append('username', filters.username);
+            if (filters.loginName) params.append('loginName', filters.loginName);
+            if (filters.email) params.append('email', filters.email);
+            if (filters.companyId) params.append('companyId', filters.companyId);
+            const url = params.toString() ? `${apiUrl}?${params.toString()}` : apiUrl;
+            fetch(url)
                 .then(res => res.json())
                 .then(users => {
                     usersTable.innerHTML = '';
@@ -103,6 +130,27 @@
                     });
                 });
         }
+        // Handle search form submit
+        const userSearchForm = document.getElementById('userSearchForm');
+        userSearchForm.onsubmit = function(e) {
+            e.preventDefault();
+            const filters = {
+                username: document.getElementById('searchUsername').value.trim(),
+                loginName: document.getElementById('searchLoginName').value.trim(),
+                email: document.getElementById('searchEmail').value.trim(),
+                companyId: document.getElementById('searchCompanyId').value
+            };
+            fetchUsers(filters);
+        };
+
+        // Handle reset search
+        document.getElementById('resetSearchBtn').onclick = function() {
+            document.getElementById('searchUsername').value = '';
+            document.getElementById('searchLoginName').value = '';
+            document.getElementById('searchEmail').value = '';
+            document.getElementById('searchCompanyId').value = '';
+            fetchUsers();
+        };
 
         userForm.onsubmit = function(e) {
             e.preventDefault();

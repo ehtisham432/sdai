@@ -22,8 +22,31 @@ public class UserController {
     private com.example.inventory.repository.CompanyRepository companyRepository;
 
     @GetMapping
-    public List<User> getAllUsers() {
-        return userRepository.findAll();
+    public List<User> searchUsers(
+            @RequestParam(required = false) String username,
+            @RequestParam(required = false) String loginName,
+            @RequestParam(required = false) String email,
+            @RequestParam(required = false) Long companyId
+    ) {
+        List<User> users = userRepository.findAll();
+        return users.stream().filter(user -> {
+            boolean match = true;
+            if (username != null && !username.isEmpty()) {
+                match &= user.getUsername() != null && user.getUsername().toLowerCase().contains(username.toLowerCase());
+            }
+            if (loginName != null && !loginName.isEmpty()) {
+                match &= user.getLoginName() != null && user.getLoginName().toLowerCase().contains(loginName.toLowerCase());
+            }
+            if (email != null && !email.isEmpty()) {
+                match &= user.getEmail() != null && user.getEmail().toLowerCase().contains(email.toLowerCase());
+            }
+            if (companyId != null && user.getCompany() != null) {
+                match &= user.getCompany().getId().equals(companyId);
+            } else if (companyId != null) {
+                match = false;
+            }
+            return match;
+        }).toList();
     }
 
     @PostMapping
