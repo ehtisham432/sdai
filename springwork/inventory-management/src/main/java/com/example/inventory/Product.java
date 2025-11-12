@@ -2,6 +2,7 @@ package com.example.inventory;
 
 import jakarta.persistence.*;
 import java.util.Set;
+import java.util.List;
 
 @Entity
 public class Product {
@@ -10,14 +11,43 @@ public class Product {
     private Long id;
     private String name;
     private String description;
+    private Double price;
+    public Double getPrice() {
+        return price;
+    }
+
+    public void setPrice(Double price) {
+        this.price = price;
+    }
 
     @ManyToOne
     @JoinColumn(name = "company_id")
     private Company company;
 
     @OneToMany(mappedBy = "product")
-    @com.fasterxml.jackson.annotation.JsonIgnore
     private Set<Inventory> inventories;
+
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL)
+    private List<ProductImage> images;
+
+    @OneToOne
+    @JoinColumn(name = "title_image_id")
+    private ProductImage titleImage;
+    public List<ProductImage> getImages() {
+        return images;
+    }
+
+    public void setImages(List<ProductImage> images) {
+        this.images = images;
+    }
+
+    public ProductImage getTitleImage() {
+        return titleImage;
+    }
+
+    public void setTitleImage(ProductImage titleImage) {
+        this.titleImage = titleImage;
+    }
 
     public Long getId() {
         return id;
