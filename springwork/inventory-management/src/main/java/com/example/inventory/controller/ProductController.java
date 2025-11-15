@@ -166,12 +166,26 @@ public class ProductController {
             return ResponseEntity.ok(saved);
         }
 
-        // If new images are uploaded, replace images with newly uploaded ones (existing behavior)
+        // If new images are uploaded, preserve existing (not-deleted) images and append newly uploaded ones
         if (images != null && images.length > 0) {
-            java.util.List<ProductImage> productImages = new java.util.ArrayList<>();
+            Product existing = productRepository.findById(id).orElse(null);
+            java.util.List<ProductImage> allImages = new java.util.ArrayList<>();
+            if (existing != null && existing.getImages() != null) {
+                for (ProductImage pi : existing.getImages()) {
+                    if (!imagesToDelete.contains(pi.getId())) {
+                        pi.setProduct(product);
+                        allImages.add(pi);
+                    } else {
+                        // already deleted above
+                    }
+                }
+            }
+
             String uploadDir = System.getProperty("user.dir") + "/uploads/product-images/";
             java.io.File dir = new java.io.File(uploadDir);
             if (!dir.exists()) dir.mkdirs();
+            // track newly created images to map titleImageIdx (index among new uploads)
+            java.util.List<ProductImage> newImages = new java.util.ArrayList<>();
             for (int i = 0; i < images.length; i++) {
                 MultipartFile file = images[i];
                 String filename = System.currentTimeMillis() + "_" + file.getOriginalFilename();
@@ -183,12 +197,31 @@ public class ProductController {
                 }
                 ProductImage img = new ProductImage();
                 img.setUrl("/uploads/product-images/" + filename);
-                img.setTitleImage(titleImageIdx != null && i == titleImageIdx);
                 img.setProduct(product);
-                productImages.add(img);
-                if (img.isTitleImage()) product.setTitleImage(img);
+                newImages.add(img);
+                allImages.add(img);
             }
-            product.setImages(productImages);
+
+            // set title image: prefer titleImageId (existing), else if titleImageIdx provided it's an index among newImages
+            product.setTitleImage(null);
+            if (titleImageId != null) {
+                for (ProductImage pi : allImages) {
+                    boolean isTitle = (pi.getId() != null && pi.getId().equals(titleImageId));
+                    pi.setTitleImage(isTitle);
+                    if (isTitle) product.setTitleImage(pi);
+                }
+            } else if (titleImageIdx != null) {
+                int newIdx = titleImageIdx.intValue();
+                if (newIdx >= 0 && newIdx < newImages.size()) {
+                    // compute global index
+                    ProductImage chosen = newImages.get(newIdx);
+                    for (ProductImage pi : allImages) pi.setTitleImage(false);
+                    chosen.setTitleImage(true);
+                    product.setTitleImage(chosen);
+                }
+            }
+
+            product.setImages(allImages);
         }
         Product saved = productRepository.save(product);
         return ResponseEntity.ok(saved);

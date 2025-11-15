@@ -127,7 +127,6 @@
         }
 
         productForm.onsubmit = function(e) {
-        	alert('on submit called');
             e.preventDefault();
             const id = document.getElementById('productId').value;
             const name = document.getElementById('name').value;
@@ -141,7 +140,7 @@
             let method = id ? 'PUT' : 'POST';
             let url = apiUrl + (id ? `/${id}` : '');
             const formData = new FormData();
-            alert('on submit m: '+method);
+            
             formData.append('product', new Blob([JSON.stringify(product)], { type: 'application/json' }));
 
             // if there are no files to upload, send a JSON PUT (avoids multipart parsing issues)
@@ -174,8 +173,9 @@
                 return;
             }
 
-            // append files for multipart request
+            // append files for multipart request, skipping any new files the user removed
             for (let i = 0; i < imagesInput.files.length; i++) {
+                if (deletedNewIndices.has(i)) continue;
                 formData.append('images', imagesInput.files[i]);
             }
 
@@ -216,7 +216,8 @@
         // State holders
         let existingImages = []; // {id, url, titleImage}
         let selectedValue = null; // 'existing:<id>' or 'new:<idx>'
-    let imagesToDelete = [];
+        let imagesToDelete = [];
+        let deletedNewIndices = new Set();
 
         function setSelectedValue(val, domEl) {
             selectedValue = val;
@@ -232,33 +233,40 @@
             imagePreview.innerHTML = '';
             // render existing images first
             existingImages.forEach((img, idx) => {
+                // container is a horizontal flex row: image (with badge overlay) then delete button to the right
                 const wrap = document.createElement('div');
-                wrap.className = 'img-wrap position-relative rounded border p-1 me-2 mb-2';
+                wrap.className = 'd-flex align-items-center gap-2 me-2 mb-2 p-1 rounded border';
                 wrap.style.cursor = 'pointer';
+                wrap.dataset.value = 'existing:' + img.id;
+
+                // image container so badge can be absolute relative to image
+                const imgContainer = document.createElement('div');
+                imgContainer.style.position = 'relative';
                 const el = document.createElement('img');
                 el.src = img.url;
                 el.style.maxWidth = '80px';
                 el.style.maxHeight = '80px';
                 el.className = 'd-block';
-                wrap.dataset.value = 'existing:' + img.id;
-                wrap.appendChild(el);
-                // badge for title
+                imgContainer.appendChild(el);
+
+                // badge for title (overlay on image)
                 if (img.titleImage) {
                     const badge = document.createElement('span');
                     badge.className = 'badge bg-primary position-absolute';
-                    badge.style.right = '6px';
+                    badge.style.left = '6px';
                     badge.style.top = '6px';
                     badge.textContent = 'Title';
-                    wrap.appendChild(badge);
+                    imgContainer.appendChild(badge);
                 }
-                wrap.addEventListener('click', () => setSelectedValue(wrap.dataset.value, wrap));
-                // delete button
+
+                wrap.appendChild(imgContainer);
+
+                // delete button placed to the right (outside the image)
                 const del = document.createElement('button');
                 del.type = 'button';
-                del.className = 'btn btn-sm btn-danger position-absolute';
-                del.style.left = '6px';
-                del.style.top = '6px';
+                del.className = 'btn btn-sm btn-danger';
                 del.style.padding = '0.15rem 0.35rem';
+                del.style.lineHeight = '1';
                 del.textContent = '×';
                 del.title = 'Remove image';
                 del.addEventListener('click', (ev) => {
@@ -272,8 +280,11 @@
                     }
                     wrap.remove();
                 });
+
+                wrap.addEventListener('click', () => setSelectedValue(wrap.dataset.value, wrap));
                 wrap.appendChild(del);
                 imagePreview.appendChild(wrap);
+
                 // if this should be selected initially
                 if ((selectedValue && selectedValue === wrap.dataset.value) || (!selectedValue && img.titleImage)) {
                     setSelectedValue(wrap.dataset.value, wrap);
@@ -283,21 +294,46 @@
             // render newly selected files
             const files = Array.from(imagesInput.files || []);
             files.forEach((file, idx) => {
+                if (deletedNewIndices.has(idx)) return;
                 const wrap = document.createElement('div');
-                wrap.className = 'img-wrap position-relative rounded border p-1 me-2 mb-2';
+                wrap.className = 'd-flex align-items-center gap-2 me-2 mb-2 p-1 rounded border';
                 wrap.style.cursor = 'pointer';
+                wrap.dataset.value = 'new:' + idx;
+
                 const el = document.createElement('img');
                 el.style.maxWidth = '80px';
                 el.style.maxHeight = '80px';
                 el.className = 'd-block';
-                wrap.dataset.value = 'new:' + idx;
-                wrap.addEventListener('click', () => setSelectedValue(wrap.dataset.value, wrap));
+
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     el.src = e.target.result;
                 };
                 reader.readAsDataURL(file);
+
+                // delete button for newly selected file (remove from view and mark index skipped)
+                const del = document.createElement('button');
+                del.type = 'button';
+                del.className = 'btn btn-sm btn-danger';
+                del.style.padding = '0.15rem 0.35rem';
+                del.style.lineHeight = '1';
+                del.textContent = '×';
+                del.title = 'Remove new image';
+                del.addEventListener('click', (ev) => {
+                    ev.stopPropagation();
+                    // mark new index as deleted so it won't be sent
+                    deletedNewIndices.add(idx);
+                    // if this was selected, clear selection
+                    if (selectedValue === wrap.dataset.value) {
+                        selectedValue = null;
+                        titleImageSelection.value = '';
+                    }
+                    renderPreviews();
+                });
+
                 wrap.appendChild(el);
+                wrap.appendChild(del);
+                wrap.addEventListener('click', () => setSelectedValue(wrap.dataset.value, wrap));
                 imagePreview.appendChild(wrap);
                 // if matches previously selected value
                 if (selectedValue && selectedValue === wrap.dataset.value) setSelectedValue(wrap.dataset.value, wrap);
@@ -344,14 +380,13 @@
                   // alert(imagePreview);
                    //alert(titleImageSelect);
                     imagePreview.innerHTML = '';
-                   // titleImageSelect.innerHTML = '';
-                    alert("Test");
                     existingImages = product.images && product.images.length > 0 ? product.images : [];
-                    alert("Existing Images on edit "+ existingImages.length);
                     // clear any previous file input selection
                     imagesInput.value = null;
                     selectedValue = null;
                     titleImageSelection.value = '';
+                    imagesToDelete = [];
+                    deletedNewIndices.clear();
                     renderPreviews();
                    // keep user selection state
                 });
