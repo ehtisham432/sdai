@@ -113,15 +113,47 @@ public class ProductController {
             @RequestPart("product") Product product,
             @RequestPart(value = "images", required = false) MultipartFile[] images,
             @RequestParam(value = "titleImageIdx", required = false) Integer titleImageIdx,
-            @RequestParam(value = "titleImageId", required = false) Long titleImageId) {
+            @RequestParam(value = "titleImageId", required = false) Long titleImageId,
+            @RequestParam(value = "imagesToDelete", required = false) String imagesToDeleteJson) {
         product.setId(id);
+        // parse imagesToDelete JSON if provided
+        java.util.Set<Long> imagesToDelete = new java.util.HashSet<>();
+        if (imagesToDeleteJson != null && !imagesToDeleteJson.isBlank()) {
+            try {
+                com.fasterxml.jackson.databind.ObjectMapper om = new com.fasterxml.jackson.databind.ObjectMapper();
+                Long[] arr = om.readValue(imagesToDeleteJson, Long[].class);
+                for (Long x : arr) imagesToDelete.add(x);
+            } catch (Exception e) {
+                logger.warn("Failed to parse imagesToDelete: {}", imagesToDeleteJson);
+            }
+        }
+        // If there are images to delete, remove them from disk and DB first
+        if (!imagesToDelete.isEmpty()) {
+            for (Long imgId : imagesToDelete) {
+                ProductImage pi = productImageRepository.findById(imgId).orElse(null);
+                if (pi != null) {
+                    try {
+                        if (pi.getUrl() != null && pi.getUrl().startsWith("/uploads/product-images/")) {
+                            java.nio.file.Path path = java.nio.file.Paths.get(System.getProperty("user.dir") + pi.getUrl());
+                            java.nio.file.Files.deleteIfExists(path);
+                        }
+                    } catch (Exception ignored) {}
+                    productImageRepository.deleteById(imgId);
+                }
+            }
+        }
 
         // If no new images are uploaded but client provided titleImageId, update existing images' title flag
         if ((images == null || images.length == 0) && titleImageId != null) {
             Product existing = productRepository.findById(id).orElse(null);
             if (existing == null) return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Product not found");
 
-            java.util.List<ProductImage> imgs = existing.getImages() != null ? new java.util.ArrayList<>(existing.getImages()) : new java.util.ArrayList<>();
+            java.util.List<ProductImage> imgs = existing.getImages() != null ? new java.util.ArrayList<>() : new java.util.ArrayList<>();
+            if (existing.getImages() != null) {
+                for (ProductImage pi : existing.getImages()) {
+                    if (!imagesToDelete.contains(pi.getId())) imgs.add(pi);
+                }
+            }
             ProductImage chosen = null;
             for (ProductImage pi : imgs) {
                 boolean isTitle = (pi.getId() != null && pi.getId().equals(titleImageId));
@@ -167,13 +199,46 @@ public class ProductController {
     public ResponseEntity<?> updateProductJson(
             @PathVariable Long id,
             @RequestBody Product product,
-            @RequestParam(value = "titleImageId", required = false) Long titleImageId) {
+            @RequestParam(value = "titleImageId", required = false) Long titleImageId,
+            @RequestParam(value = "imagesToDelete", required = false) String imagesToDeleteJson) {
         product.setId(id);
+        // parse imagesToDelete if present
+        java.util.Set<Long> imagesToDelete = new java.util.HashSet<>();
+        if (imagesToDeleteJson != null && !imagesToDeleteJson.isBlank()) {
+            try {
+                com.fasterxml.jackson.databind.ObjectMapper om = new com.fasterxml.jackson.databind.ObjectMapper();
+                Long[] arr = om.readValue(imagesToDeleteJson, Long[].class);
+                for (Long x : arr) imagesToDelete.add(x);
+            } catch (Exception e) {
+                logger.warn("Failed to parse imagesToDeleteJson: {}", imagesToDeleteJson);
+            }
+        }
+
+        // delete requested images
+        if (!imagesToDelete.isEmpty()) {
+            for (Long imgId : imagesToDelete) {
+                ProductImage pi = productImageRepository.findById(imgId).orElse(null);
+                if (pi != null) {
+                    try {
+                        if (pi.getUrl() != null && pi.getUrl().startsWith("/uploads/product-images/")) {
+                            java.nio.file.Files.deleteIfExists(java.nio.file.Paths.get(System.getProperty("user.dir") + pi.getUrl()));
+                        }
+                    } catch (Exception ignored) {}
+                    productImageRepository.deleteById(imgId);
+                }
+            }
+        }
+
         // only handle title image change when client sends JSON (no files)
         if (titleImageId != null) {
             Product existing = productRepository.findById(id).orElse(null);
             if (existing == null) return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Product not found");
-            java.util.List<ProductImage> imgs = existing.getImages() != null ? new java.util.ArrayList<>(existing.getImages()) : new java.util.ArrayList<>();
+            java.util.List<ProductImage> imgs = new java.util.ArrayList<>();
+            if (existing.getImages() != null) {
+                for (ProductImage pi : existing.getImages()) {
+                    if (!imagesToDelete.contains(pi.getId())) imgs.add(pi);
+                }
+            }
             ProductImage chosen = null;
             for (ProductImage pi : imgs) {
                 boolean isTitle = (pi.getId() != null && pi.getId().equals(titleImageId));

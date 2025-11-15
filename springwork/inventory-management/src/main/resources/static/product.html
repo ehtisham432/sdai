@@ -152,6 +152,11 @@
                     const idVal = selection.split(':')[1];
                     putUrl += `?titleImageId=${encodeURIComponent(idVal)}`;
                 }
+                // append imagesToDelete param if needed
+                if (imagesToDelete.length > 0) {
+                    const delParam = encodeURIComponent(JSON.stringify(imagesToDelete));
+                    putUrl += (putUrl.includes('?') ? '&' : '?') + `imagesToDelete=${delParam}`;
+                }
                 fetch(putUrl, {
                     method,
                     headers: { 'Content-Type': 'application/json' },
@@ -184,6 +189,10 @@
                     formData.append('titleImageIdx', idx);
                 }
             }
+            // append imagesToDelete if any
+            if (imagesToDelete.length > 0) {
+                formData.append('imagesToDelete', JSON.stringify(imagesToDelete));
+            }
 
             fetch(url, {
                 method,
@@ -207,6 +216,7 @@
         // State holders
         let existingImages = []; // {id, url, titleImage}
         let selectedValue = null; // 'existing:<id>' or 'new:<idx>'
+    let imagesToDelete = [];
 
         function setSelectedValue(val, domEl) {
             selectedValue = val;
@@ -221,7 +231,6 @@
         function renderPreviews() {
             imagePreview.innerHTML = '';
             // render existing images first
-            alert('inside render preview');
             existingImages.forEach((img, idx) => {
                 const wrap = document.createElement('div');
                 wrap.className = 'img-wrap position-relative rounded border p-1 me-2 mb-2';
@@ -243,6 +252,27 @@
                     wrap.appendChild(badge);
                 }
                 wrap.addEventListener('click', () => setSelectedValue(wrap.dataset.value, wrap));
+                // delete button
+                const del = document.createElement('button');
+                del.type = 'button';
+                del.className = 'btn btn-sm btn-danger position-absolute';
+                del.style.left = '6px';
+                del.style.top = '6px';
+                del.style.padding = '0.15rem 0.35rem';
+                del.textContent = '×';
+                del.title = 'Remove image';
+                del.addEventListener('click', (ev) => {
+                    ev.stopPropagation();
+                    // mark for deletion and remove from UI
+                    imagesToDelete.push(img.id);
+                    // if this was selected as title, clear selection
+                    if (selectedValue === wrap.dataset.value) {
+                        selectedValue = null;
+                        titleImageSelection.value = '';
+                    }
+                    wrap.remove();
+                });
+                wrap.appendChild(del);
                 imagePreview.appendChild(wrap);
                 // if this should be selected initially
                 if ((selectedValue && selectedValue === wrap.dataset.value) || (!selectedValue && img.titleImage)) {
