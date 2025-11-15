@@ -282,6 +282,14 @@
         resetBtn.onclick = function() {
             productForm.reset();
             document.getElementById('productId').value = '';
+            // clear preview and selection state
+            document.getElementById('imagePreview').innerHTML = '';
+            document.getElementById('titleImageSelection').value = '';
+            existingImages = [];
+            selectedValue = null;
+            // clear file input
+            const imagesInput = document.getElementById('images');
+            if (imagesInput) imagesInput.value = null;
         };
 
         filterCompanySelect.onchange = function() {
