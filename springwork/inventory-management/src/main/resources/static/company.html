@@ -12,20 +12,15 @@
         <h1 class="display-5 fw-bold mb-4 text-center">Company Management</h1>
         <div class="card mb-4">
             <div class="card-body">
-                <form id="companyForm" class="row g-3 w-100 mx-auto">
+                <form id="companyForm" class="row g-3 w-100 mx-auto" method="POST">
                     <input type="hidden" id="companyId">
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <label class="form-label fw-semibold" for="name">Name</label>
                         <input type="text" id="name" class="form-control" required>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <label class="form-label fw-semibold" for="address">Address</label>
                         <input type="text" id="address" class="form-control" required>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label fw-semibold" for="logo">Logo</label>
-                        <input type="file" id="logo" class="form-control" accept="image/*">
-                        <div id="logoPreview" class="mt-2"></div>
                     </div>
                     <div class="col-12 d-flex justify-content-end gap-2 mt-2">
                         <button type="submit" class="btn btn-primary">Save</button>
@@ -87,38 +82,24 @@
             const id = document.getElementById('companyId').value;
             const name = document.getElementById('name').value;
             const address = document.getElementById('address').value;
-            const logoInput = document.getElementById('logo');
             const company = { name, address };
-            if (id) company.id = id;
-            let method = id ? 'PUT' : 'POST';
-            let url = apiUrl + (id ? `/${id}` : '');
-            const formData = new FormData();
-            formData.append('company', new Blob([JSON.stringify(company)], { type: 'application/json' }));
-            if (logoInput.files.length > 0) {
-                formData.append('logo', logoInput.files[0]);
+            let method = 'POST';
+            let url = apiUrl;
+            if (id) {
+                method = 'PUT';
+                url += `/${id}`;
+                company.id = id;
             }
             fetch(url, {
                 method,
-                body: formData
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(company)
             })
             .then(() => {
                 companyForm.reset();
                 document.getElementById('companyId').value = '';
-                document.getElementById('logoPreview').innerHTML = '';
                 fetchCompanies();
             });
-        };
-        // Logo preview
-        document.getElementById('logo').onchange = function() {
-            const logoPreview = document.getElementById('logoPreview');
-            logoPreview.innerHTML = '';
-            if (this.files && this.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    logoPreview.innerHTML = `<img src="${e.target.result}" class="rounded border" style="max-width:80px;max-height:80px;">`;
-                };
-                reader.readAsDataURL(this.files[0]);
-            }
         };
 
         resetBtn.onclick = function() {

@@ -43,6 +43,7 @@ public class ProductController {
         public Double price;
         public Object company;
         public Object productType;
+        public Object productCategory;
         public String titleImageUrl;
         public static ProductDTO fromProduct(Product p) {
             ProductDTO dto = new ProductDTO();
@@ -52,6 +53,7 @@ public class ProductController {
             dto.price = p.getPrice();
             dto.company = p.getCompany();
             dto.productType = p.getProductType();
+            dto.productCategory = p.getProductCategory();
             dto.titleImageUrl = (p.getTitleImage() != null) ? p.getTitleImage().getUrl() : null;
             return dto;
         }

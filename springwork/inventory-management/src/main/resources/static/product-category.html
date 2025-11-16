@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Categories</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</head>
+<body class="bg-light min-vh-100">
+    <div class="container py-5 px-2">
+        <h1 class="display-5 fw-bold mb-4 text-center">Product Categories</h1>
+        <div class="card mb-4">
+            <div class="card-body">
+                <div id="errorMsg" class="d-none mb-3 p-2 rounded bg-danger-subtle text-danger fw-semibold text-center"></div>
+                <form id="categoryForm" class="row g-3 w-100 mx-auto">
+                    <input type="hidden" id="categoryId">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold" for="name">Name</label>
+                        <input type="text" id="name" class="form-control" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold" for="description">Description</label>
+                        <input type="text" id="description" class="form-control">
+                    </div>
+                    <div class="col-12 d-flex justify-content-end gap-2 mt-2">
+                        <button type="submit" class="btn btn-primary">Save</button>
+                        <button type="button" id="resetBtn" class="btn btn-secondary">Reset</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <h2 class="h5 fw-bold mb-3">Categories List</h2>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Description</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="categoriesTable">
+                            <!-- Product categories will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        const apiUrl = '/product-categories';
+        const categoryForm = document.getElementById('categoryForm');
+        const categoriesTable = document.getElementById('categoriesTable');
+        const resetBtn = document.getElementById('resetBtn');
+
+        function loadCategories() {
+            fetch(apiUrl)
+                .then(res => res.json())
+                .then(categories => {
+                    categoriesTable.innerHTML = '';
+                    categories.forEach(c => {
+                        categoriesTable.innerHTML += `
+                            <tr>
+                                <td>${c.id}</td>
+                                <td>${c.name}</td>
+                                <td>${c.description || ''}</td>
+                                <td class="d-flex gap-2">
+                                    <button class="btn btn-warning btn-sm text-white" onclick="editCategory(${c.id})">Edit</button>
+                                    <button class="btn btn-danger btn-sm" onclick="deleteCategory(${c.id})">Delete</button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                });
+        }
+
+        categoryForm.onsubmit = function(e) {
+            e.preventDefault();
+            const id = document.getElementById('categoryId').value;
+            const name = document.getElementById('name').value.trim();
+            const description = document.getElementById('description').value.trim();
+            if (!name) return;
+            const payload = { name, description };
+            let method = 'POST';
+            let url = apiUrl;
+            if (id) {
+                method = 'PUT';
+                url += `/${id}`;
+                payload.id = id;
+            }
+            fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(async res => {
+                if (!res.ok) {
+                    const msg = await res.text();
+                    const errorMsg = document.getElementById('errorMsg');
+                    errorMsg.textContent = msg || 'An error occurred';
+                    errorMsg.classList.remove('d-none');
+                    return;
+                }
+                document.getElementById('categoryId').value = '';
+                categoryForm.reset();
+                loadCategories();
+            });
+        };
+
+        resetBtn.onclick = function() {
+            categoryForm.reset();
+            document.getElementById('categoryId').value = '';
+            document.getElementById('errorMsg').classList.add('d-none');
+        };
+
+        window.editCategory = function(id) {
+            fetch(`${apiUrl}/${id}`)
+                .then(res => res.json())
+                .then(c => {
+                    document.getElementById('categoryId').value = c.id;
+                    document.getElementById('name').value = c.name;
+                    document.getElementById('description').value = c.description || '';
+                });
+        };
+
+        window.deleteCategory = function(id) {
+            if (!confirm('Delete this product category?')) return;
+            fetch(`${apiUrl}/${id}`, { method: 'DELETE' })
+                .then(() => loadCategories());
+        };
+
+        loadCategories();
+    </script>
+</body>
+</html>

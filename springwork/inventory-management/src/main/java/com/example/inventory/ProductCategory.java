@@ -3,7 +3,7 @@ package com.example.inventory;
 import jakarta.persistence.*;
 
 @Entity
-public class ProductType {
+public class ProductCategory {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

@@ -1,7 +1,7 @@
 package com.example.inventory.controller;
 
-import com.example.inventory.ProductType;
-import com.example.inventory.repository.ProductTypeRepository;
+import com.example.inventory.ProductCategory;
+import com.example.inventory.repository.ProductCategoryRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -9,54 +9,54 @@ import java.net.URI;
 import java.util.List;
 
 @RestController
-@RequestMapping("/product-types")
-public class ProductTypeController {
+@RequestMapping("/product-categories")
+public class ProductCategoryController {
 
-    private final ProductTypeRepository repo;
+    private final ProductCategoryRepository repo;
 
-    public ProductTypeController(ProductTypeRepository repo) {
+    public ProductCategoryController(ProductCategoryRepository repo) {
         this.repo = repo;
     }
 
     @GetMapping
-    public List<ProductType> list() {
+    public List<ProductCategory> list() {
         return repo.findAll();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ProductType> get(@PathVariable Long id) {
+    public ResponseEntity<ProductCategory> get(@PathVariable Long id) {
         return repo.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public ResponseEntity<?> create(@RequestBody ProductType pt) {
-        if (pt.getName() == null || pt.getName().trim().isEmpty()) {
+    public ResponseEntity<?> create(@RequestBody ProductCategory pc) {
+        if (pc.getName() == null || pc.getName().trim().isEmpty()) {
             return ResponseEntity.badRequest().body("Name is required");
         }
-        if (repo.findAll().stream().anyMatch(t -> t.getName().equalsIgnoreCase(pt.getName().trim()))) {
+        if (repo.findAll().stream().anyMatch(c -> c.getName().equalsIgnoreCase(pc.getName().trim()))) {
             return ResponseEntity.badRequest().body("Name must be unique");
         }
         try {
-            ProductType saved = repo.save(pt);
-            return ResponseEntity.created(URI.create("/product-types/" + saved.getId())).body(saved);
+            ProductCategory saved = repo.save(pc);
+            return ResponseEntity.created(URI.create("/product-categories/" + saved.getId())).body(saved);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Error: " + e.getMessage());
         }
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> update(@PathVariable Long id, @RequestBody ProductType pt) {
-        if (pt.getName() == null || pt.getName().trim().isEmpty()) {
+    public ResponseEntity<?> update(@PathVariable Long id, @RequestBody ProductCategory pc) {
+        if (pc.getName() == null || pc.getName().trim().isEmpty()) {
             return ResponseEntity.badRequest().body("Name is required");
         }
-        if (repo.findAll().stream().anyMatch(t -> t.getName().equalsIgnoreCase(pt.getName().trim()) && !t.getId().equals(id))) {
+        if (repo.findAll().stream().anyMatch(c -> c.getName().equalsIgnoreCase(pc.getName().trim()) && !c.getId().equals(id))) {
             return ResponseEntity.badRequest().body("Name must be unique");
         }
         return repo.findById(id).map(existing -> {
-            existing.setName(pt.getName());
-            existing.setDescription(pt.getDescription());
+            existing.setName(pc.getName());
+            existing.setDescription(pc.getDescription());
             repo.save(existing);
             return ResponseEntity.ok(existing);
         }).orElse(ResponseEntity.notFound().build());

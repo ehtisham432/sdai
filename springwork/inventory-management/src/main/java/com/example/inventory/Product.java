@@ -34,6 +34,10 @@ public class Product {
     @JoinColumn(name = "product_type_id")
     private ProductType productType;
 
+    @ManyToOne
+    @JoinColumn(name = "product_category_id")
+    private ProductCategory productCategory;
+
     @OneToOne
     @JoinColumn(name = "title_image_id")
     private ProductImage titleImage;
@@ -47,6 +51,13 @@ public class Product {
 
     public ProductType getProductType() {
         return productType;
+    }
+    public ProductCategory getProductCategory() {
+        return productCategory;
+    }
+
+    public void setProductCategory(ProductCategory productCategory) {
+        this.productCategory = productCategory;
     }
 
     public void setProductType(ProductType productType) {
