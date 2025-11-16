@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Product Types</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="p-4">
+  <div class="container">
+    <h1>Product Types</h1>
+
+    <form id="createForm" class="row g-3 mb-4">
+      <div class="col-md-4">
+        <input id="name" class="form-control" placeholder="Name" required />
+      </div>
+      <div class="col-md-6">
+        <input id="description" class="form-control" placeholder="Description" />
+      </div>
+      <div class="col-md-2">
+        <button class="btn btn-primary" type="submit">Add</button>
+      </div>
+    </form>
+
+    <table class="table table-striped" id="typesTable">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Description</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script>
+    async function load() {
+      const res = await fetch('/product-types');
+      const data = await res.json();
+      const tbody = document.querySelector('#typesTable tbody');
+      tbody.innerHTML = '';
+      data.forEach(pt => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${pt.id}</td><td>${pt.name}</td><td>${pt.description || ''}</td><td>
+          <button class="btn btn-sm btn-secondary me-2" data-id="${pt.id}" data-action="edit">Edit</button>
+          <button class="btn btn-sm btn-danger" data-id="${pt.id}" data-action="delete">Delete</button>
+        </td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    document.getElementById('createForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('name').value.trim();
+      const description = document.getElementById('description').value.trim();
+      if (!name) return;
+      await fetch('/product-types', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, description })
+      });
+      document.getElementById('name').value = '';
+      document.getElementById('description').value = '';
+      load();
+    });
+
+    document.querySelector('#typesTable').addEventListener('click', async (e) => {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      const id = btn.getAttribute('data-id');
+      const action = btn.getAttribute('data-action');
+      if (action === 'delete') {
+        if (!confirm('Delete this product type?')) return;
+        await fetch('/product-types/' + id, { method: 'DELETE' });
+        load();
+      } else if (action === 'edit') {
+        const res = await fetch('/product-types/' + id);
+        const pt = await res.json();
+        const newName = prompt('Name', pt.name);
+        if (newName === null) return;
+        const newDesc = prompt('Description', pt.description || '') || '';
+        await fetch('/product-types/' + id, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: pt.id, name: newName, description: newDesc })
+        });
+        load();
+      }
+    });
+
+    load();
+  </script>
+</body>
+</html>

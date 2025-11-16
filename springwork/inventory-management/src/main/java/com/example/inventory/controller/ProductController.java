@@ -42,6 +42,7 @@ public class ProductController {
         public String description;
         public Double price;
         public Object company;
+        public Object productType;
         public String titleImageUrl;
         public static ProductDTO fromProduct(Product p) {
             ProductDTO dto = new ProductDTO();
@@ -50,6 +51,7 @@ public class ProductController {
             dto.description = p.getDescription();
             dto.price = p.getPrice();
             dto.company = p.getCompany();
+            dto.productType = p.getProductType();
             dto.titleImageUrl = (p.getTitleImage() != null) ? p.getTitleImage().getUrl() : null;
             return dto;
         }
@@ -84,6 +86,15 @@ public class ProductController {
             }
             product.setImages(productImages);
         }
+        Product saved = productRepository.save(product);
+        return ResponseEntity.ok(saved);
+    }
+
+    // Support JSON POST requests when no files are uploaded (create product without images)
+    @PostMapping(path = "", consumes = "application/json")
+    public ResponseEntity<?> createProductJson(@RequestBody Product product) {
+        // ensure id is null for creation
+        product.setId(null);
         Product saved = productRepository.save(product);
         return ResponseEntity.ok(saved);
     }

@@ -30,6 +30,10 @@ public class Product {
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL)
     private List<ProductImage> images;
 
+    @ManyToOne
+    @JoinColumn(name = "product_type_id")
+    private ProductType productType;
+
     @OneToOne
     @JoinColumn(name = "title_image_id")
     private ProductImage titleImage;
@@ -39,6 +43,14 @@ public class Product {
 
     public void setImages(List<ProductImage> images) {
         this.images = images;
+    }
+
+    public ProductType getProductType() {
+        return productType;
+    }
+
+    public void setProductType(ProductType productType) {
+        this.productType = productType;
     }
 
     public ProductImage getTitleImage() {

@@ -32,6 +32,12 @@
                             <option value="">Select Company</option>
                         </select>
                     </div>
+                    <div class="col-md-2">
+                        <label class="form-label fw-semibold" for="productTypeId">Product Type</label>
+                        <select id="productTypeId" class="form-select">
+                            <option value="">Select Type</option>
+                        </select>
+                    </div>
                     <div class="col-12">
                         <label class="form-label fw-semibold" for="images">Product Images</label>
                         <input type="file" id="images" class="form-control" multiple accept="image/*">
@@ -85,6 +91,7 @@
         const productsTable = document.getElementById('productsTable');
         const resetBtn = document.getElementById('resetBtn');
         const companySelect = document.getElementById('companyId');
+    const productTypeSelect = document.getElementById('productTypeId');
         const filterCompanySelect = document.getElementById('filterCompanyId');
 
         function fetchCompanies() {
@@ -96,6 +103,17 @@
                     companies.forEach(company => {
                         companySelect.innerHTML += `<option value="${company.id}">${company.name}</option>`;
                         filterCompanySelect.innerHTML += `<option value="${company.id}">${company.name}</option>`;
+                    });
+                });
+        }
+
+        function fetchProductTypes() {
+            fetch('/product-types')
+                .then(res => res.json())
+                .then(types => {
+                    productTypeSelect.innerHTML = '<option value="">Select Type</option>';
+                    types.forEach(t => {
+                        productTypeSelect.innerHTML += `<option value="${t.id}">${t.name}</option>`;
                     });
                 });
         }
@@ -133,9 +151,10 @@
             const description = document.getElementById('description').value;
             const price = document.getElementById('price').value;
             const companyId = document.getElementById('companyId').value;
+            const productTypeId = document.getElementById('productTypeId').value;
             const imagesInput = document.getElementById('images');
             const selection = document.getElementById('titleImageSelection').value;
-            const product = { name, description, price, company: { id: companyId } };
+            const product = { name, description, price, company: { id: companyId }, productType: productTypeId ? { id: productTypeId } : null };
             if (id) product.id = id;
             let method = id ? 'PUT' : 'POST';
             let url = apiUrl + (id ? `/${id}` : '');
@@ -373,6 +392,7 @@
                     document.getElementById('description').value = product.description;
                     document.getElementById('price').value = product.price;
                     document.getElementById('companyId').value = product.company ? product.company.id : '';
+                    document.getElementById('productTypeId').value = product.productType ? product.productType.id : '';
 					//alert("on edit product images length: "+product.images.length);
                     // Show existing images in preview and select
                     const imagePreview = document.getElementById('imagePreview');
@@ -398,6 +418,7 @@
         };
 
         fetchCompanies();
+        fetchProductTypes();
         fetchProducts();
     </script>
 </body>
