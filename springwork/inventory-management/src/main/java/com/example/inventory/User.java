@@ -18,9 +18,12 @@ public class User {
     @Column(nullable = false)
     private String password;
 
-    @ManyToOne
-    @JoinColumn(name = "company_id")
-    private Company company;
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties({"users","products"})
+    @ManyToMany
+    @JoinTable(name = "user_companies",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "company_id"))
+    private java.util.Set<Company> companies;
 
     public Long getId() {
         return id;
@@ -61,12 +64,11 @@ public class User {
     public void setPassword(String password) {
         this.password = password;
     }
-
-    public Company getCompany() {
-        return company;
+    public java.util.Set<Company> getCompanies() {
+        return companies;
     }
 
-    public void setCompany(Company company) {
-        this.company = company;
+    public void setCompanies(java.util.Set<Company> companies) {
+        this.companies = companies;
     }
 }

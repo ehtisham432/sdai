@@ -32,10 +32,10 @@
                         <input type="email" id="email" class="form-control" required>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label fw-semibold" for="companyId">Company</label>
-                        <select id="companyId" class="form-select" required>
-                            <option value="">Select Company</option>
+                        <label class="form-label fw-semibold" for="companyId">Companies</label>
+                        <select id="companyId" class="form-select" multiple>
                         </select>
+                        <div class="form-text">Hold Ctrl/Cmd to select multiple companies.</div>
                     </div>
                     <div class="col-12 d-flex justify-content-end gap-2 mt-2">
                         <button type="submit" class="btn btn-primary">Save</button>
@@ -106,7 +106,7 @@
             fetch(companyApiUrl)
                 .then(res => res.json())
                 .then(companies => {
-                    companySelect.innerHTML = '<option value="">Select Company</option>';
+                    companySelect.innerHTML = '';
                     searchCompanySelect.innerHTML = '<option value="">All</option>';
                     companies.forEach(company => {
                         companySelect.innerHTML += `<option value="${company.id}">${company.name}</option>`;
@@ -134,7 +134,7 @@
                                 <td>${user.username}</td>
                                 <td>${user.loginName || ''}</td>
                                 <td>${user.email}</td>
-                                <td>${user.company ? user.company.name : ''}</td>
+                                <td>${user.companies ? user.companies.map(c => c.name).join(', ') : ''}</td>
                                 <td class="d-flex gap-2">
                                     <button class="btn btn-warning btn-sm text-white" onclick="editUser(${user.id})">Edit</button>
                                     <button class="btn btn-danger btn-sm" onclick="deleteUser(${user.id})">Delete</button>
@@ -173,9 +173,9 @@
             const loginName = document.getElementById('loginName').value;
             const password = document.getElementById('password').value;
             const email = document.getElementById('email').value;
-            const companyId = document.getElementById('companyId').value;
+            const selected = Array.from(document.getElementById('companyId').selectedOptions).map(o => ({ id: o.value }));
 
-            const user = { username, loginName, password, email, company: { id: companyId } };
+            const user = { username, loginName, password, email, companies: selected };
             let method = 'POST';
             let url = apiUrl;
             if (id) {
@@ -225,7 +225,18 @@
                     document.getElementById('loginName').value = user.loginName || '';
                     document.getElementById('password').value = user.password;
                     document.getElementById('email').value = user.email;
-                    document.getElementById('companyId').value = user.company ? user.company.id : '';
+                    // set multiple selected companies
+                    const opts = document.getElementById('companyId').options;
+                    for (let i = 0; i < opts.length; i++) {
+                        opts[i].selected = false;
+                    }
+                    if (user.companies) {
+                        user.companies.forEach(c => {
+                            for (let i = 0; i < opts.length; i++) {
+                                if (opts[i].value == c.id) opts[i].selected = true;
+                            }
+                        });
+                    }
                 });
         };
 

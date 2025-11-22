@@ -40,10 +40,13 @@ public class UserController {
             if (email != null && !email.isEmpty()) {
                 match &= user.getEmail() != null && user.getEmail().toLowerCase().contains(email.toLowerCase());
             }
-            if (companyId != null && user.getCompany() != null) {
-                match &= user.getCompany().getId().equals(companyId);
-            } else if (companyId != null) {
-                match = false;
+            if (companyId != null) {
+                if (user.getCompanies() != null) {
+                    boolean found = user.getCompanies().stream().anyMatch(c -> c.getId() != null && c.getId().equals(companyId));
+                    match &= found;
+                } else {
+                    match = false;
+                }
             }
             return match;
         }).toList();
@@ -51,11 +54,15 @@ public class UserController {
 
     @PostMapping
     public ResponseEntity<?> createUser(@RequestBody User user) {
-        if (user.getCompany() != null && user.getCompany().getId() != null) {
-            user.setCompany(companyRepository.findById(user.getCompany().getId()).orElse(null));
-        }
-        if (user.getCompany() == null) {
-            System.out.println("Company is null");
+        // attach managed Company entities for each provided company id
+        if (user.getCompanies() != null && !user.getCompanies().isEmpty()) {
+            java.util.Set<com.example.inventory.Company> attached = new java.util.HashSet<>();
+            for (com.example.inventory.Company c : user.getCompanies()) {
+                if (c != null && c.getId() != null) {
+                    companyRepository.findById(c.getId()).ifPresent(attached::add);
+                }
+            }
+            user.setCompanies(attached);
         }
         // Enforce unique loginName
         if (user.getLoginName() == null || user.getLoginName().isEmpty()) {
@@ -82,8 +89,14 @@ public class UserController {
     @PutMapping("/{id}")
     public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody User user) {
         user.setId(id);
-        if (user.getCompany() != null && user.getCompany().getId() != null) {
-            user.setCompany(companyRepository.findById(user.getCompany().getId()).orElse(null));
+        if (user.getCompanies() != null && !user.getCompanies().isEmpty()) {
+            java.util.Set<com.example.inventory.Company> attached = new java.util.HashSet<>();
+            for (com.example.inventory.Company c : user.getCompanies()) {
+                if (c != null && c.getId() != null) {
+                    companyRepository.findById(c.getId()).ifPresent(attached::add);
+                }
+            }
+            user.setCompanies(attached);
         }
         if (user.getLoginName() == null || user.getLoginName().isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("loginName is required");

@@ -11,7 +11,7 @@ public class Company {
     private String name;
     private String address;
 
-    @OneToMany(mappedBy = "company")
+    @ManyToMany(mappedBy = "companies")
     @com.fasterxml.jackson.annotation.JsonIgnore
     private Set<User> users;
 
