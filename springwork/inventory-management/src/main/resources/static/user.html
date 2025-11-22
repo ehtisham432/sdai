@@ -186,7 +186,7 @@
 
             // Hide error message before request
             const errorMsg = document.getElementById('errorMsg');
-            errorMsg.classList.add('hidden');
+            errorMsg.classList.add('d-none');
             errorMsg.textContent = '';
 
             fetch(url, {
@@ -198,12 +198,15 @@
                 if (!res.ok) {
                     const msg = await res.text();
                     errorMsg.textContent = msg || 'An error occurred';
-                    errorMsg.classList.remove('hidden');
+                    errorMsg.classList.remove('d-none');
                     throw new Error(msg);
                 }
                 return res.json();
             })
             .then(() => {
+                // clear any previous error and reset form
+                errorMsg.classList.add('d-none');
+                errorMsg.textContent = '';
                 userForm.reset();
                 document.getElementById('userId').value = '';
                 fetchUsers();
@@ -214,6 +217,8 @@
         resetBtn.onclick = function() {
             userForm.reset();
             document.getElementById('userId').value = '';
+            document.getElementById('errorMsg').classList.add('d-none');
+            document.getElementById('errorMsg').textContent = '';
         };
 
         window.editUser = function(id) {

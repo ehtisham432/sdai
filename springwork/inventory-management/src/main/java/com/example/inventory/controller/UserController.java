@@ -68,8 +68,14 @@ public class UserController {
         if (user.getLoginName() == null || user.getLoginName().isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("loginName is required");
         }
-        if (userRepository.findByLoginName(user.getLoginName()) != null) {
+        if (userRepository.findFirstByLoginName(user.getLoginName()) != null) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body("loginName already exists");
+        }
+        // Enforce unique email if provided
+        if (user.getEmail() != null && !user.getEmail().isEmpty()) {
+            if (userRepository.findFirstByEmail(user.getEmail()) != null) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body("email already exists");
+            }
         }
         if (user.getPassword() == null || user.getPassword().isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("password is required");
@@ -101,9 +107,16 @@ public class UserController {
         if (user.getLoginName() == null || user.getLoginName().isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("loginName is required");
         }
-        User existing = userRepository.findByLoginName(user.getLoginName());
+        User existing = userRepository.findFirstByLoginName(user.getLoginName());
         if (existing != null && !existing.getId().equals(id)) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body("loginName already exists");
+        }
+        // Enforce unique email if provided
+        if (user.getEmail() != null && !user.getEmail().isEmpty()) {
+            User byEmail = userRepository.findFirstByEmail(user.getEmail());
+            if (byEmail != null && !byEmail.getId().equals(id)) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body("email already exists");
+            }
         }
         if (user.getPassword() == null || user.getPassword().isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("password is required");
@@ -111,7 +124,7 @@ public class UserController {
         try {
             return ResponseEntity.ok(userRepository.save(user));
         } catch (DataIntegrityViolationException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("loginName must be unique");
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("Unique constraint violated: loginName or email");
         }
     }
 
