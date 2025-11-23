@@ -83,7 +83,11 @@ public class UserController {
         try {
             return ResponseEntity.ok(userRepository.save(user));
         } catch (DataIntegrityViolationException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("loginName must be unique");
+            String msg = e.getMessage() != null ? e.getMessage() : "";
+            if (msg.contains("user_companies") || msg.contains("UNIQUE")) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body("One or more of these companies are already assigned to another user");
+            }
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("Unique constraint violated: loginName or email");
         }
     }
 
@@ -124,6 +128,10 @@ public class UserController {
         try {
             return ResponseEntity.ok(userRepository.save(user));
         } catch (DataIntegrityViolationException e) {
+            String msg = e.getMessage() != null ? e.getMessage() : "";
+            if (msg.contains("user_companies") || msg.contains("UNIQUE")) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body("One or more of these companies are already assigned to another user");
+            }
             return ResponseEntity.status(HttpStatus.CONFLICT).body("Unique constraint violated: loginName or email");
         }
     }

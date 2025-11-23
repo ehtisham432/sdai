@@ -23,7 +23,8 @@ public class User {
     @ManyToMany
     @JoinTable(name = "user_companies",
             joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "company_id"))
+            inverseJoinColumns = @JoinColumn(name = "company_id"),
+            uniqueConstraints = @UniqueConstraint(columnNames = {"company_id"}))
     private java.util.Set<Company> companies;
 
     public Long getId() {
