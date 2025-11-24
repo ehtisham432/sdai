@@ -22,6 +22,11 @@
                         <label class="form-label fw-semibold" for="address">Address</label>
                         <input type="text" id="address" class="form-control" required>
                     </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold" for="productCategories">Product Categories</label>
+                            <select id="productCategories" class="form-select" multiple size="5"></select>
+                            <div class="form-text">Hold Ctrl (Windows) or Cmd (Mac) to select multiple categories.</div>
+                        </div>
                     <div class="col-12 d-flex justify-content-end gap-2 mt-2">
                         <button type="submit" class="btn btn-primary">Save</button>
                         <button type="button" id="resetBtn" class="btn btn-secondary">Reset</button>
@@ -55,6 +60,23 @@
         const companyForm = document.getElementById('companyForm');
         const companiesTable = document.getElementById('companiesTable');
         const resetBtn = document.getElementById('resetBtn');
+        const categoriesSelect = document.getElementById('productCategories');
+        let allCategories = [];
+
+        function fetchCategories() {
+            fetch('/product-categories')
+                .then(res => res.json())
+                .then(categories => {
+                    allCategories = categories;
+                    categoriesSelect.innerHTML = '';
+                    categories.forEach(cat => {
+                        const opt = document.createElement('option');
+                        opt.value = cat.id;
+                        opt.textContent = cat.name;
+                        categoriesSelect.appendChild(opt);
+                    });
+                });
+        }
 
         function fetchCompanies() {
             fetch(apiUrl)
@@ -82,7 +104,9 @@
             const id = document.getElementById('companyId').value;
             const name = document.getElementById('name').value;
             const address = document.getElementById('address').value;
-            const company = { name, address };
+            // gather selected categories
+            const selected = Array.from(categoriesSelect.selectedOptions).map(o => ({ id: Number(o.value) }));
+            const company = { name, address, productCategories: selected };
             let method = 'POST';
             let url = apiUrl;
             if (id) {
@@ -105,6 +129,8 @@
         resetBtn.onclick = function() {
             companyForm.reset();
             document.getElementById('companyId').value = '';
+            // clear category selection
+            if (categoriesSelect) categoriesSelect.selectedIndex = -1;
         };
 
         window.editCompany = function(id) {
@@ -114,6 +140,22 @@
                     document.getElementById('companyId').value = company.id;
                     document.getElementById('name').value = company.name;
                     document.getElementById('address').value = company.address;
+                    // set selected categories
+                    if (company.productCategories && Array.isArray(company.productCategories)) {
+                        // wait until allCategories populated
+                        const setSelected = () => {
+                            Array.from(categoriesSelect.options).forEach(opt => {
+                                opt.selected = company.productCategories.some(pc => pc.id === Number(opt.value));
+                            });
+                        };
+                        if (allCategories.length === 0) {
+                            fetchCategories().then(setSelected).catch(setSelected);
+                        } else {
+                            setSelected();
+                        }
+                    } else {
+                        Array.from(categoriesSelect.options).forEach(opt => opt.selected = false);
+                    }
                 });
         };
 
@@ -122,6 +164,7 @@
                 .then(() => fetchCompanies());
         };
 
+        fetchCategories();
         fetchCompanies();
     </script>
 </body>
