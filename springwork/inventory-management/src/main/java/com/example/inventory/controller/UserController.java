@@ -129,7 +129,7 @@ public class UserController {
             return ResponseEntity.ok(userRepository.save(user));
         } catch (DataIntegrityViolationException e) {
             String msg = e.getMessage() != null ? e.getMessage() : "";
-            if (msg.contains("user_companies") || msg.contains("UNIQUE")) {
+            if (msg.contains("user_companies") || msg.contains("UNIQUE")) {// unique constraint removed from database #Ehtisham (now one user may have multiple companies and one company may have many users
                 return ResponseEntity.status(HttpStatus.CONFLICT).body("One or more of these companies are already assigned to another user");
             }
             return ResponseEntity.status(HttpStatus.CONFLICT).body("Unique constraint violated: loginName or email");

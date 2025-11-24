@@ -19,13 +19,13 @@ public class User {
     @Column(nullable = false)
     private String password;
 
-    @com.fasterxml.jackson.annotation.JsonIgnoreProperties({"users","products"})
-    @ManyToMany
-    @JoinTable(name = "user_companies",
+        @com.fasterxml.jackson.annotation.JsonIgnoreProperties({"users","products"})
+        @ManyToMany
+        @JoinTable(name = "user_companies",
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "company_id"),
-            uniqueConstraints = @UniqueConstraint(columnNames = {"company_id"}))
-    private java.util.Set<Company> companies;
+            uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "company_id"}))
+        private java.util.Set<Company> companies;
 
     public Long getId() {
         return id;
