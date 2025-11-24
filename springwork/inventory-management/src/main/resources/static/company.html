@@ -6,6 +6,8 @@
     <title>Company Management</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
 </head>
 <body class="bg-light min-vh-100">
     <div class="container py-5 px-2">
@@ -24,8 +26,8 @@
                     </div>
                         <div class="col-12">
                             <label class="form-label fw-semibold" for="productCategories">Product Categories</label>
-                            <select id="productCategories" class="form-select" multiple size="5"></select>
-                            <div class="form-text">Hold Ctrl (Windows) or Cmd (Mac) to select multiple categories.</div>
+                            <select id="productCategories" class="form-select" multiple placeholder="Search or select categories..."></select>
+                            <div class="form-text">Search and select one or more product categories.</div>
                         </div>
                     <div class="col-12 d-flex justify-content-end gap-2 mt-2">
                         <button type="submit" class="btn btn-primary">Save</button>
@@ -62,12 +64,28 @@
         const resetBtn = document.getElementById('resetBtn');
         const categoriesSelect = document.getElementById('productCategories');
         let allCategories = [];
+        let ts = null; // TomSelect instance
+
+        function initTomSelectIfNeeded() {
+            if (window.TomSelect && !ts) {
+                ts = new TomSelect('#productCategories', {
+                    valueField: 'id',
+                    labelField: 'name',
+                    searchField: 'name',
+                    options: allCategories.map(c => ({ id: String(c.id), name: c.name })),
+                    maxItems: null,
+                    create: false,
+                    placeholder: 'Search or select categories...'
+                });
+            }
+        }
 
         function fetchCategories() {
             fetch('/product-categories')
                 .then(res => res.json())
                 .then(categories => {
                     allCategories = categories;
+                    // populate native select as fallback
                     categoriesSelect.innerHTML = '';
                     categories.forEach(cat => {
                         const opt = document.createElement('option');
@@ -75,6 +93,12 @@
                         opt.textContent = cat.name;
                         categoriesSelect.appendChild(opt);
                     });
+                    // initialize or update TomSelect
+                    initTomSelectIfNeeded();
+                    if (ts) {
+                        ts.clearOptions();
+                        ts.addOptions(categories.map(c => ({ id: String(c.id), name: c.name })));
+                    }
                 });
         }
 
@@ -104,8 +128,15 @@
             const id = document.getElementById('companyId').value;
             const name = document.getElementById('name').value;
             const address = document.getElementById('address').value;
-            // gather selected categories
-            const selected = Array.from(categoriesSelect.selectedOptions).map(o => ({ id: Number(o.value) }));
+            // gather selected categories (Tom Select if available)
+            let selectedIds = [];
+            if (ts) {
+                const v = ts.getValue();
+                selectedIds = Array.isArray(v) ? v : (v ? [v] : []);
+            } else {
+                selectedIds = Array.from(categoriesSelect.selectedOptions).map(o => String(o.value));
+            }
+            const selected = selectedIds.map(s => ({ id: Number(s) }));
             const company = { name, address, productCategories: selected };
             let method = 'POST';
             let url = apiUrl;
@@ -120,8 +151,13 @@
                 body: JSON.stringify(company)
             })
             .then(() => {
-                companyForm.reset();
-                document.getElementById('companyId').value = '';
+                // Clear form only when creating a new company (POST). For updates (PUT)
+                // keep the form populated so the user can continue editing if desired.
+                if (method === 'POST') {
+                    companyForm.reset();
+                    document.getElementById('companyId').value = '';
+                    if (ts) ts.clear(true);
+                }
                 fetchCompanies();
             });
         };
@@ -130,6 +166,7 @@
             companyForm.reset();
             document.getElementById('companyId').value = '';
             // clear category selection
+            if (ts) ts.clear(true);
             if (categoriesSelect) categoriesSelect.selectedIndex = -1;
         };
 
@@ -141,20 +178,25 @@
                     document.getElementById('name').value = company.name;
                     document.getElementById('address').value = company.address;
                     // set selected categories
-                    if (company.productCategories && Array.isArray(company.productCategories)) {
-                        // wait until allCategories populated
-                        const setSelected = () => {
-                            Array.from(categoriesSelect.options).forEach(opt => {
-                                opt.selected = company.productCategories.some(pc => pc.id === Number(opt.value));
-                            });
-                        };
-                        if (allCategories.length === 0) {
-                            fetchCategories().then(setSelected).catch(setSelected);
+                    const applySelected = (selectedIds) => {
+                        if (ts) {
+                            ts.setValue(selectedIds.map(s => String(s)));
                         } else {
-                            setSelected();
+                            Array.from(categoriesSelect.options).forEach(opt => {
+                                opt.selected = selectedIds.includes(Number(opt.value));
+                            });
+                        }
+                    };
+
+                    if (company.productCategories && Array.isArray(company.productCategories)) {
+                        const selectedIds = company.productCategories.map(pc => pc.id);
+                        if (allCategories.length === 0) {
+                            fetchCategories().then(() => applySelected(selectedIds)).catch(() => applySelected(selectedIds));
+                        } else {
+                            applySelected(selectedIds);
                         }
                     } else {
-                        Array.from(categoriesSelect.options).forEach(opt => opt.selected = false);
+                        applySelected([]);
                     }
                 });
         };
