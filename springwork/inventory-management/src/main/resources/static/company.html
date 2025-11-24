@@ -27,7 +27,11 @@
                         <div class="col-12">
                             <label class="form-label fw-semibold" for="productCategories">Product Categories</label>
                             <select id="productCategories" class="form-select" multiple placeholder="Search or select categories..."></select>
-                            <div class="form-text">Search and select one or more product categories.</div>
+                            <div class="input-group mt-2">
+                                <input id="newCategoryName" class="form-control form-control-sm" placeholder="New category name" aria-label="New category name">
+                                <button type="button" id="createCategoryBtn" class="btn btn-outline-primary btn-sm">Add</button>
+                            </div>
+                            <div class="form-text">Search and select one or more product categories. Use the field above to add a new category inline.</div>
                         </div>
                     <div class="col-12 d-flex justify-content-end gap-2 mt-2">
                         <button type="submit" class="btn btn-primary">Save</button>
@@ -101,6 +105,51 @@
                     }
                 });
         }
+
+        // Create a new product category inline and add it to Tom Select + native select
+        function createCategoryInline() {
+            const nameInput = document.getElementById('newCategoryName');
+            const btn = document.getElementById('createCategoryBtn');
+            const name = nameInput.value.trim();
+            if (!name) return;
+            btn.disabled = true;
+            fetch('/product-categories', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name })
+            })
+            .then(res => { if (!res.ok) throw new Error('Failed to create category'); return res.json(); })
+            .then(category => {
+                // keep local cache
+                allCategories.push(category);
+                // add to native select
+                const opt = document.createElement('option');
+                opt.value = category.id;
+                opt.textContent = category.name;
+                categoriesSelect.appendChild(opt);
+                // add to Tom Select and select it
+                if (ts) {
+                    ts.addOption({ id: String(category.id), name: category.name });
+                    ts.addItem(String(category.id));
+                } else {
+                    opt.selected = true;
+                }
+                nameInput.value = '';
+                nameInput.focus();
+            })
+            .catch(err => { console.error(err); alert('Could not create category'); })
+            .finally(() => { btn.disabled = false; });
+        }
+
+        // attach create handlers
+        document.addEventListener('DOMContentLoaded', () => {
+            const createBtn = document.getElementById('createCategoryBtn');
+            const nameInput = document.getElementById('newCategoryName');
+            if (createBtn) createBtn.addEventListener('click', createCategoryInline);
+            if (nameInput) nameInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') { e.preventDefault(); createCategoryInline(); }
+            });
+        });
 
         function fetchCompanies() {
             fetch(apiUrl)
