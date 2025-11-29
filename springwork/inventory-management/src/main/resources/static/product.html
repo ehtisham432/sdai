@@ -114,8 +114,10 @@
                 });
         }
 
-        function fetchProductCategories() {
-            fetch('/product-categories')
+        function fetchProductCategories(companyId = '') {
+            let url = '/product-categories';
+            if (companyId) url += `?companyId=${companyId}`;
+            return fetch(url)
                 .then(res => res.json())
                 .then(categories => {
                     productCategorySelect.innerHTML = '<option value="">Select Category</option>';
@@ -400,6 +402,13 @@
             fetchProducts(this.value);
         };
 
+        companySelect.onchange = function() {
+            // When company is changed in the form, reload only categories assigned to that company
+            fetchProductCategories(this.value);
+            // Reset category selection (it will be set when editing a product)
+            productCategorySelect.value = '';
+        };
+
         window.editProduct = function(id) {
         	//alert('apdfasd: '+apiUrl);
         	//alert('m: '+method);
@@ -410,9 +419,13 @@
                     document.getElementById('name').value = product.name;
                     document.getElementById('description').value = product.description;
                     document.getElementById('price').value = product.price;
-                    document.getElementById('companyId').value = product.company ? product.company.id : '';
+                    const companyId = product.company ? product.company.id : '';
+                    document.getElementById('companyId').value = companyId;
                     document.getElementById('productTypeId').value = product.productType ? product.productType.id : '';
-                    document.getElementById('productCategoryId').value = product.productCategory ? product.productCategory.id : '';
+                    // Load categories for this company, then set the selected category
+                    fetchProductCategories(companyId).then(() => {
+                        document.getElementById('productCategoryId').value = product.productCategory ? product.productCategory.id : '';
+                    });
 					//alert("on edit product images length: "+product.images.length);
                     // Show existing images in preview and select
                     const imagePreview = document.getElementById('imagePreview');

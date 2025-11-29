@@ -19,7 +19,10 @@ public class ProductCategoryController {
     }
 
     @GetMapping
-    public List<ProductCategory> list() {
+    public List<ProductCategory> list(@RequestParam(value = "companyId", required = false) Long companyId) {
+        if (companyId != null) {
+            return repo.findByCompanyId(companyId);
+        }
         return repo.findAll();
     }
 
