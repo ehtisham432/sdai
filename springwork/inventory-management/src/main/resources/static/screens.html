@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Screens</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</head>
+<body class="bg-light min-vh-100">
+    <div class="container py-5 px-2">
+        <h1 class="display-5 fw-bold mb-4 text-center">Screens</h1>
+        <div class="card mb-4">
+            <div class="card-body">
+                <form id="screenForm" class="row g-3 w-100 mx-auto">
+                    <input type="hidden" id="screenId">
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold" for="name">Name</label>
+                        <input type="text" id="name" class="form-control" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold" for="path">Path</label>
+                        <input type="text" id="path" class="form-control" placeholder="/product.html">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold" for="groupId">Group</label>
+                        <select id="groupId" class="form-select"></select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-semibold" for="description">Description</label>
+                        <input type="text" id="description" class="form-control">
+                    </div>
+                    <div class="col-12 d-flex justify-content-end gap-2 mt-2">
+                        <button type="submit" class="btn btn-primary">Save</button>
+                        <button type="button" id="resetBtn" class="btn btn-secondary">Reset</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <h2 class="h5 fw-bold mb-3">All Screens</h2>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Path</th>
+                                <th>Group</th>
+                                <th>Description</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="screensTable"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        const apiUrl = '/screens';
+        const groupApiUrl = '/screen-groups';
+        const screenForm = document.getElementById('screenForm');
+        const screensTable = document.getElementById('screensTable');
+        const resetBtn = document.getElementById('resetBtn');
+        const groupSelect = document.getElementById('groupId');
+
+        async function loadGroups() {
+            const res = await fetch(groupApiUrl);
+            const groups = await res.json();
+            groupSelect.innerHTML = '<option value="">Select Group</option>';
+            groups.forEach(g => groupSelect.innerHTML += `<option value="${g.id}">${g.name}</option>`);
+        }
+
+        async function loadScreens() {
+            const res = await fetch(apiUrl);
+            const screens = await res.json();
+            screensTable.innerHTML = '';
+            screens.forEach(s => {
+                screensTable.innerHTML += `
+                    <tr>
+                        <td>${s.id}</td>
+                        <td>${s.name}</td>
+                        <td>${s.path || ''}</td>
+                        <td>${s.group ? s.group.name : ''}</td>
+                        <td>${s.description || ''}</td>
+                        <td class="d-flex gap-2">
+                            <button class="btn btn-warning btn-sm text-white" onclick="editScreen(${s.id})">Edit</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteScreen(${s.id})">Delete</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        screenForm.onsubmit = function(e) {
+            e.preventDefault();
+            const id = document.getElementById('screenId').value;
+            const name = document.getElementById('name').value.trim();
+            const path = document.getElementById('path').value.trim();
+            const groupId = document.getElementById('groupId').value || null;
+            const description = document.getElementById('description').value.trim();
+            if (!name) return;
+            const payload = { name, path, description, group: groupId ? { id: groupId } : null };
+            let method = 'POST';
+            let url = apiUrl;
+            if (id) { method = 'PUT'; url += `/${id}`; payload.id = id }
+            fetch(url, { method, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) })
+                .then(async res => {
+                    if (!res.ok) { const msg = await res.text(); alert(msg || 'Error'); throw new Error(msg); }
+                    return res.json();
+                })
+                .then(() => { screenForm.reset(); document.getElementById('screenId').value=''; loadScreens(); })
+                .catch(() => {});
+        };
+
+        resetBtn.onclick = function() { screenForm.reset(); document.getElementById('screenId').value = ''; };
+
+        window.editScreen = function(id) { fetch(`${apiUrl}/${id}`).then(res => res.json()).then(s => { document.getElementById('screenId').value = s.id; document.getElementById('name').value = s.name; document.getElementById('path').value = s.path || ''; document.getElementById('groupId').value = s.group ? s.group.id : ''; document.getElementById('description').value = s.description || ''; }); };
+
+        window.deleteScreen = function(id) { if (!confirm('Delete this screen?')) return; fetch(`${apiUrl}/${id}`, {method:'DELETE'}).then(() => loadScreens()); };
+
+        loadGroups();
+        loadScreens();
+    </script>
+</body>
+</html>

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Role Screens</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</head>
+<body class="bg-light min-vh-100">
+    <div class="container py-5 px-2">
+        <h1 class="display-5 fw-bold mb-4 text-center">Assign Screens to Roles</h1>
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold" for="roleId">Role</label>
+                        <select id="roleId" class="form-select"></select>
+                    </div>
+                    <div class="col-md-6 d-flex justify-content-end">
+                        <button id="loadBtn" class="btn btn-primary">Load Screens</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="screensList" class="card" style="display:none;">
+            <div class="card-body">
+                <h2 class="h5 fw-bold mb-3">Screens</h2>
+                <div id="groupsContainer"></div>
+                <div class="mt-3 d-flex gap-2 justify-content-end">
+                    <button id="assignBtn" class="btn btn-success">Assign Selected</button>
+                    <button id="unassignBtn" class="btn btn-danger">Unassign Selected</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        const roleApi = '/roles';
+        const groupApi = '/screen-groups';
+        const screenApi = '/screens';
+        const roleScreenApi = '/role-screens';
+
+        const roleSelect = document.getElementById('roleId');
+        const loadBtn = document.getElementById('loadBtn');
+        const screensList = document.getElementById('screensList');
+        const groupsContainer = document.getElementById('groupsContainer');
+        const assignBtn = document.getElementById('assignBtn');
+        const unassignBtn = document.getElementById('unassignBtn');
+
+        async function loadRoles() {
+            const res = await fetch(roleApi);
+            const roles = await res.json();
+            roleSelect.innerHTML = '<option value="">Select Role</option>';
+            roles.forEach(r => roleSelect.innerHTML += `<option value="${r.id}">${r.name}</option>`);
+        }
+
+        async function loadGroups() {
+            const res = await fetch(groupApi);
+            const groups = await res.json();
+            groupsContainer.innerHTML = '';
+            for (const g of groups) {
+                const groupDiv = document.createElement('div');
+                groupDiv.className = 'mb-3';
+                groupDiv.innerHTML = `<h5 class="mb-2">${g.name}</h5><div id="group-${g.id}"></div>`;
+                groupsContainer.appendChild(groupDiv);
+                const screensRes = await fetch(`${screenApi}?groupId=${g.id}`);
+                const screens = await screensRes.json();
+                const groupNode = document.getElementById(`group-${g.id}`);
+                screens.forEach(s => {
+                    const checkbox = document.createElement('div');
+                    checkbox.className = 'form-check';
+                    checkbox.innerHTML = `<input class="form-check-input screen-check" type="checkbox" data-id="${s.id}" id="screen-${s.id}"><label class="form-check-label" for="screen-${s.id}">${s.name} (${s.path || ''})</label>`;
+                    groupNode.appendChild(checkbox);
+                });
+            }
+        }
+
+        async function loadAssigned(roleId) {
+            const res = await fetch(`/role-screens/screens?roleId=${roleId}`);
+            const assigned = await res.json();
+            document.querySelectorAll('.screen-check').forEach(cb => cb.checked = false);
+            assigned.forEach(s => {
+                const cb = document.querySelector(`.screen-check[data-id='${s.id}']`);
+                if (cb) cb.checked = true;
+            });
+        }
+
+        loadBtn.addEventListener('click', async () => {
+            const roleId = roleSelect.value;
+            if (!roleId) { alert('Select a role'); return; }
+            screensList.style.display = 'block';
+            await loadGroups();
+            await loadAssigned(roleId);
+        });
+
+        assignBtn.addEventListener('click', async () => {
+            const roleId = roleSelect.value; if (!roleId) return alert('Select a role');
+            const checked = Array.from(document.querySelectorAll('.screen-check:checked')).map(cb => cb.getAttribute('data-id'));
+            for (const screenId of checked) {
+                // check if already assigned by calling role-screens list
+                const resCheck = await fetch(`/role-screens?roleId=${roleId}`);
+                const rs = await resCheck.json();
+                const assignedIds = rs.map(r => r.screen.id);
+                if (assignedIds.includes(parseInt(screenId))) continue;
+                await fetch(roleScreenApi, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ role: { id: roleId }, screen: { id: screenId } }) });
+            }
+            await loadAssigned(roleId);
+        });
+
+        unassignBtn.addEventListener('click', async () => {
+            const roleId = roleSelect.value; if (!roleId) return alert('Select a role');
+            const checked = Array.from(document.querySelectorAll('.screen-check:checked')).map(cb => cb.getAttribute('data-id'));
+            for (const screenId of checked) {
+                await fetch(`/role-screens?roleId=${roleId}&screenId=${screenId}`, { method: 'DELETE' });
+            }
+            await loadAssigned(roleId);
+        });
+
+        loadRoles();
+    </script>
+</body>
+</html>
