@@ -58,6 +58,8 @@
             const res = await fetch(groupApi);
             const groups = await res.json();
             groupsContainer.innerHTML = '';
+            
+            // Display screens grouped by their group
             for (const g of groups) {
                 const groupDiv = document.createElement('div');
                 groupDiv.className = 'mb-3';
@@ -71,6 +73,24 @@
                     checkbox.className = 'form-check';
                     checkbox.innerHTML = `<input class="form-check-input screen-check" type="checkbox" data-id="${s.id}" id="screen-${s.id}"><label class="form-check-label" for="screen-${s.id}">${s.name} (${s.path || ''})</label>`;
                     groupNode.appendChild(checkbox);
+                });
+            }
+            
+            // Display ungrouped screens separately
+            const allScreensRes = await fetch(screenApi);
+            const allScreens = await allScreensRes.json();
+            const ungroupedScreens = allScreens.filter(s => !s.group);
+            if (ungroupedScreens.length > 0) {
+                const ungroupedDiv = document.createElement('div');
+                ungroupedDiv.className = 'mb-3';
+                ungroupedDiv.innerHTML = `<h5 class="mb-2">Ungrouped</h5><div id="group-ungrouped"></div>`;
+                groupsContainer.appendChild(ungroupedDiv);
+                const ungroupedNode = document.getElementById('group-ungrouped');
+                ungroupedScreens.forEach(s => {
+                    const checkbox = document.createElement('div');
+                    checkbox.className = 'form-check';
+                    checkbox.innerHTML = `<input class="form-check-input screen-check" type="checkbox" data-id="${s.id}" id="screen-${s.id}"><label class="form-check-label" for="screen-${s.id}">${s.name} (${s.path || ''})</label>`;
+                    ungroupedNode.appendChild(checkbox);
                 });
             }
         }
