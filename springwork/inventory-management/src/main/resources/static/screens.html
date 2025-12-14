@@ -26,6 +26,10 @@
                         <label class="form-label fw-semibold" for="groupId">Group</label>
                         <select id="groupId" class="form-select"></select>
                     </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold" for="displayTypeId">Display Type</label>
+                        <select id="displayTypeId" class="form-select"></select>
+                    </div>
                     <div class="col-12">
                         <label class="form-label fw-semibold" for="description">Description</label>
                         <input type="text" id="description" class="form-control">
@@ -48,6 +52,7 @@
                                 <th>Name</th>
                                 <th>Path</th>
                                 <th>Group</th>
+                                <th>Display Type</th>
                                 <th>Description</th>
                                 <th>Actions</th>
                             </tr>
@@ -61,16 +66,25 @@
     <script>
         const apiUrl = '/screens';
         const groupApiUrl = '/screen-groups';
+        const displayTypeApiUrl = '/display-types';
         const screenForm = document.getElementById('screenForm');
         const screensTable = document.getElementById('screensTable');
         const resetBtn = document.getElementById('resetBtn');
         const groupSelect = document.getElementById('groupId');
+        const displayTypeSelect = document.getElementById('displayTypeId');
 
         async function loadGroups() {
             const res = await fetch(groupApiUrl);
             const groups = await res.json();
             groupSelect.innerHTML = '<option value="">Select Group</option>';
             groups.forEach(g => groupSelect.innerHTML += `<option value="${g.id}">${g.name}</option>`);
+        }
+
+        async function loadDisplayTypes() {
+            const res = await fetch(displayTypeApiUrl);
+            const types = await res.json();
+            displayTypeSelect.innerHTML = '<option value="">Select Display Type</option>';
+            types.forEach(t => displayTypeSelect.innerHTML += `<option value="${t.id}">${t.name}</option>`);
         }
 
         async function loadScreens() {
@@ -84,6 +98,7 @@
                         <td>${s.name}</td>
                         <td>${s.path || ''}</td>
                         <td>${s.group ? s.group.name : ''}</td>
+                        <td>${s.displayType ? s.displayType.name : ''}</td>
                         <td>${s.description || ''}</td>
                         <td class="d-flex gap-2">
                             <button class="btn btn-warning btn-sm text-white" onclick="editScreen(${s.id})">Edit</button>
@@ -100,9 +115,10 @@
             const name = document.getElementById('name').value.trim();
             const path = document.getElementById('path').value.trim();
             const groupId = document.getElementById('groupId').value || null;
+            const displayTypeId = document.getElementById('displayTypeId').value || null;
             const description = document.getElementById('description').value.trim();
             if (!name) return;
-            const payload = { name, path, description, group: groupId ? { id: groupId } : null };
+            const payload = { name, path, description, group: groupId ? { id: groupId } : null, displayType: displayTypeId ? { id: displayTypeId } : null };
             let method = 'POST';
             let url = apiUrl;
             if (id) { method = 'PUT'; url += `/${id}`; payload.id = id }
@@ -117,11 +133,12 @@
 
         resetBtn.onclick = function() { screenForm.reset(); document.getElementById('screenId').value = ''; };
 
-        window.editScreen = function(id) { fetch(`${apiUrl}/${id}`).then(res => res.json()).then(s => { document.getElementById('screenId').value = s.id; document.getElementById('name').value = s.name; document.getElementById('path').value = s.path || ''; document.getElementById('groupId').value = s.group ? s.group.id : ''; document.getElementById('description').value = s.description || ''; }); };
+        window.editScreen = function(id) { fetch(`${apiUrl}/${id}`).then(res => res.json()).then(s => { document.getElementById('screenId').value = s.id; document.getElementById('name').value = s.name; document.getElementById('path').value = s.path || ''; document.getElementById('groupId').value = s.group ? s.group.id : ''; document.getElementById('displayTypeId').value = s.displayType ? s.displayType.id : ''; document.getElementById('description').value = s.description || ''; }); };
 
         window.deleteScreen = function(id) { if (!confirm('Delete this screen?')) return; fetch(`${apiUrl}/${id}`, {method:'DELETE'}).then(() => loadScreens()); };
 
         loadGroups();
+        loadDisplayTypes();
         loadScreens();
     </script>
 </body>

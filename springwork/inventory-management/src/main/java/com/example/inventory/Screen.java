@@ -19,6 +19,10 @@ public class Screen {
     @JoinColumn(name = "group_id")
     private ScreenGroup group;
 
+    @ManyToOne
+    @JoinColumn(name = "display_type_id")
+    private DisplayType displayType;
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -33,4 +37,7 @@ public class Screen {
 
     public ScreenGroup getGroup() { return group; }
     public void setGroup(ScreenGroup group) { this.group = group; }
+
+    public DisplayType getDisplayType() { return displayType; }
+    public void setDisplayType(DisplayType displayType) { this.displayType = displayType; }
 }

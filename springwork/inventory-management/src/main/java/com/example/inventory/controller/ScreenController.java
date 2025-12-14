@@ -43,6 +43,7 @@ public class ScreenController {
             existing.setPath(s.getPath());
             existing.setDescription(s.getDescription());
             existing.setGroup(s.getGroup());
+            existing.setDisplayType(s.getDisplayType());
             repo.save(existing);
             return ResponseEntity.ok(existing);
         }).orElse(ResponseEntity.notFound().build());
