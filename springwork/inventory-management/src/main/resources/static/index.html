@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory Management System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; overflow-x: hidden; }
+        
+        /* Header Styles */
+        header {
+            background: #ffffff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        .navbar { padding: 1rem 0; }
+        .navbar-brand { font-size: 1.5rem; font-weight: 700; color: #000 !important; }
+        .navbar-nav .nav-link { color: #666 !important; font-weight: 500; margin: 0 1rem; transition: color 0.3s; }
+        .navbar-nav .nav-link:hover { color: #000 !important; }
+        
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 8rem 2rem;
+            text-align: center;
+            min-height: 600px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .hero h1 { font-size: 3.5rem; font-weight: 800; margin-bottom: 1rem; line-height: 1.2; }
+        .hero p { font-size: 1.3rem; margin-bottom: 2rem; opacity: 0.95; max-width: 600px; margin-left: auto; margin-right: auto; }
+        .hero .btn { padding: 0.8rem 2rem; font-size: 1rem; font-weight: 600; }
+        
+        /* Features Section */
+        .features { padding: 5rem 2rem; background: #f8f9fa; }
+        .feature-card {
+            text-align: center;
+            padding: 2rem;
+            border-radius: 10px;
+            transition: transform 0.3s, box-shadow 0.3s;
+            background: white;
+        }
+        .feature-card:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        .feature-icon { font-size: 3rem; color: #667eea; margin-bottom: 1rem; }
+        
+        /* CTA Section */
+        .cta {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 4rem 2rem;
+            text-align: center;
+        }
+        
+        .cta h2 { font-size: 2.5rem; margin-bottom: 1rem; }
+        
+        /* Footer */
+        footer {
+            background: #1a1a1a;
+            color: white;
+            padding: 3rem 2rem;
+            margin-top: 5rem;
+        }
+        
+        footer a { color: #667eea; text-decoration: none; }
+        footer a:hover { text-decoration: underline; }
+        
+        /* Animation */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .fade-in { animation: fadeInUp 0.6s ease-out; }
+    </style>
+</head>
+<body>
+    <!-- Header with Dynamic Menu -->
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-light">
+            <div class="container-fluid px-4">
+                <a class="navbar-brand" href="index.html">
+                    <i class="bi bi-boxes"></i> Inventory Pro
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMenu">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarMenu">
+                    <ul class="navbar-nav ms-auto" id="headerMenu">
+                        <!-- Menu items loaded from screens with display type H/HD -->
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div>
+            <h1 class="fade-in">Inventory Management Made Simple</h1>
+            <p class="fade-in">Manage products, categories, companies, and users all in one powerful platform</p>
+            <a href="product.html" class="btn btn-light btn-lg me-3">View Products</a>
+            <a href="company.html" class="btn btn-outline-light btn-lg">Manage Companies</a>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features">
+        <div class="container">
+            <h2 class="text-center mb-5" style="font-size: 2.5rem; font-weight: 700;">Powerful Features</h2>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="feature-card fade-in">
+                        <div class="feature-icon"><i class="bi bi-box"></i></div>
+                        <h3>Product Management</h3>
+                        <p>Organize and manage your products with categories, types, and beautiful images</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card fade-in">
+                        <div class="feature-icon"><i class="bi bi-building"></i></div>
+                        <h3>Multi-Company Support</h3>
+                        <p>Handle multiple companies and assign product categories per company</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card fade-in">
+                        <div class="feature-icon"><i class="bi bi-person-circle"></i></div>
+                        <h3>User & Role Management</h3>
+                        <p>Control access with flexible roles and screen-level permissions</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta">
+        <div class="container">
+            <h2>Ready to Get Started?</h2>
+            <p style="font-size: 1.1rem; margin-bottom: 2rem;">Start managing your inventory efficiently today</p>
+            <a href="product.html" class="btn btn-light btn-lg">Go to Dashboard</a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-md-3">
+                    <h5>About</h5>
+                    <p>Inventory Pro is a modern inventory management solution for businesses of all sizes.</p>
+                </div>
+                <div class="col-md-3">
+                    <h5>Quick Links</h5>
+                    <ul style="list-style: none;">
+                        <li><a href="product.html">Products</a></li>
+                        <li><a href="company.html">Companies</a></li>
+                        <li><a href="user.html">Users</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-3">
+                    <h5>Management</h5>
+                    <ul style="list-style: none;">
+                        <li><a href="roles.html">Roles</a></li>
+                        <li><a href="screens.html">Screens</a></li>
+                        <li><a href="role-screens.html">Permissions</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-3">
+                    <h5>Contact</h5>
+                    <p>
+                        Email: <a href="mailto:info@example.com">info@example.com</a><br>
+                        Phone: +1 (555) 123-4567
+                    </p>
+                </div>
+            </div>
+            <hr style="opacity: 0.3;">
+            <div class="text-center" style="opacity: 0.7;">
+                <p>&copy; 2025 Inventory Pro. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Load header menu from screens with display type H (Header) or HD (Header Display)
+        async function loadHeaderMenu() {
+            try {
+                const res = await fetch('/screens');
+                const screens = await res.json();
+
+                // Filter screens with display type H or HD
+                const headerScreens = screens.filter(s =>
+                    s.displayType && (s.displayType.name === 'H' || s.displayType.name === 'HD')
+                );
+
+                const navMenu = document.getElementById('headerMenu');
+                navMenu.innerHTML = '';
+
+                // Group screens by group (group.id or 'nogroup')
+                const groups = new Map();
+                headerScreens.forEach(s => {
+                    const grp = s.group ? `${s.group.id}::${s.group.name}` : 'nogroup::';
+                    if (!groups.has(grp)) groups.set(grp, []);
+                    groups.get(grp).push(s);
+                });
+
+                // Render groups: grouped menus become dropdowns; 'nogroup' items are top-level links
+                for (const [grpKey, items] of groups) {
+                    if (grpKey === 'nogroup::') {
+                        // render each ungrouped screen as top-level link
+                        items.forEach(screen => {
+                            const li = document.createElement('li');
+                            li.className = 'nav-item';
+                            const link = document.createElement('a');
+                            link.className = 'nav-link';
+                            link.href = screen.path || '#';
+                            link.textContent = screen.name;
+                            li.appendChild(link);
+                            navMenu.appendChild(li);
+                        });
+                        continue;
+                    }
+
+                    // groupKey is "id::name"
+                    const [gid, gname] = grpKey.split('::');
+                    const li = document.createElement('li');
+                    li.className = 'nav-item dropdown';
+
+                    const toggleId = `menuGroup${gid}`;
+                    const anchor = document.createElement('a');
+                    anchor.className = 'nav-link dropdown-toggle';
+                    anchor.href = '#';
+                    anchor.id = toggleId;
+                    anchor.setAttribute('role', 'button');
+                    anchor.setAttribute('data-bs-toggle', 'dropdown');
+                    anchor.setAttribute('aria-expanded', 'false');
+                    anchor.textContent = gname;
+
+                    const ul = document.createElement('ul');
+                    ul.className = 'dropdown-menu';
+                    ul.setAttribute('aria-labelledby', toggleId);
+
+                    items.forEach(screen => {
+                        const itemLi = document.createElement('li');
+                        const a = document.createElement('a');
+                        a.className = 'dropdown-item';
+                        a.href = screen.path || '#';
+                        a.textContent = screen.name;
+                        itemLi.appendChild(a);
+                        ul.appendChild(itemLi);
+                    });
+
+                    li.appendChild(anchor);
+                    li.appendChild(ul);
+                    navMenu.appendChild(li);
+                }
+
+                // Add login link at the end
+                const loginLi = document.createElement('li');
+                loginLi.className = 'nav-item';
+                loginLi.innerHTML = `<a class="nav-link" href="login.html"><i class="bi bi-box-arrow-in-right"></i> Login</a>`;
+                navMenu.appendChild(loginLi);
+
+            } catch (error) {
+                console.error('Error loading header menu:', error);
+            }
+        }
+
+        // Load menu on page load
+        window.addEventListener('DOMContentLoaded', loadHeaderMenu);
+    </script>
+</body>
+</html>
