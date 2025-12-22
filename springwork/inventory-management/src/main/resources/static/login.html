@@ -365,7 +365,6 @@
             document.querySelector('.btn-login').disabled = true;
 
             try {
-                // Simulate API call - replace with actual endpoint
                 const response = await fetch('/api/login', {
                     method: 'POST',
                     headers: {
@@ -374,23 +373,31 @@
                     body: JSON.stringify({ username, password, remember })
                 });
 
-                if (response.ok) {
+                const data = await response.json();
+
+                if (response.ok && data.success) {
                     successMessage.textContent = 'Login successful! Redirecting...';
                     successMessage.style.display = 'block';
+                    
+                    // Store JWT token in localStorage
+                    if (data.token) {
+                        localStorage.setItem('jwtToken', data.token);
+                        localStorage.setItem('userId', data.user.id);
+                        localStorage.setItem('username', data.user.username);
+                    }
+                    
+                    // Redirect after 1.5 seconds
                     setTimeout(() => {
                         window.location.href = 'index.html';
                     }, 1500);
                 } else {
-                    errorMessage.textContent = 'Invalid username or password. Please try again.';
+                    errorMessage.textContent = data.message || 'Invalid username or password. Please try again.';
                     errorMessage.style.display = 'block';
                 }
             } catch (error) {
-                // For demo purposes, show success message (remove this in production)
-                successMessage.textContent = 'Login successful! (Demo mode)';
-                successMessage.style.display = 'block';
-                setTimeout(() => {
-                    window.location.href = 'index.html';
-                }, 1500);
+                errorMessage.textContent = 'Network error. Please check your connection and try again.';
+                errorMessage.style.display = 'block';
+                console.error('Login error:', error);
             } finally {
                 // Hide loading state
                 spinner.style.display = 'none';
