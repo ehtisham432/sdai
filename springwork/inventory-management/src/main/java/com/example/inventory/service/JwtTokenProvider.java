@@ -9,6 +9,8 @@ import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
+import java.util.Map;
+import java.util.HashMap;
 
 @Service
 public class JwtTokenProvider {
@@ -25,6 +27,24 @@ public class JwtTokenProvider {
         return Jwts.builder()
                 .setSubject(String.valueOf(userId))
                 .claim("username", username)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date((new Date()).getTime() + jwtExpirationMs))
+                .signWith(key, SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    public String generateToken(Long userId, String username, String role, Long tenantId, String tenantName) {
+        SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
+        
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("username", username);
+        claims.put("role", role);
+        claims.put("tenantId", tenantId);
+        claims.put("tenantName", tenantName);
+        
+        return Jwts.builder()
+                .setSubject(String.valueOf(userId))
+                .addClaims(claims)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date((new Date()).getTime() + jwtExpirationMs))
                 .signWith(key, SignatureAlgorithm.HS256)
@@ -55,6 +75,21 @@ public class JwtTokenProvider {
             return true;
         } catch (Exception e) {
             return false;
+        }
+    }
+
+    public String getClaimFromToken(String token, String claimName) {
+        try {
+            SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
+            Claims claims = Jwts.parser()
+                    .verifyWith(key)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+            Object claim = claims.get(claimName);
+            return claim != null ? claim.toString() : null;
+        } catch (Exception e) {
+            return null;
         }
     }
 }

@@ -1,15 +1,19 @@
 package com.example.inventory.controller;
 
 import com.example.inventory.User;
+import com.example.inventory.UserCompanyRole;
 import com.example.inventory.dto.LoginRequest;
 import com.example.inventory.dto.LoginResponse;
 import com.example.inventory.repository.UserRepository;
+import com.example.inventory.repository.UserCompanyRoleRepository;
 import com.example.inventory.service.JwtTokenProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api")
@@ -18,6 +22,9 @@ public class AuthController {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private UserCompanyRoleRepository userCompanyRoleRepository;
 
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
@@ -56,8 +63,25 @@ public class AuthController {
                         .body(new LoginResponse(false, "Invalid username or password", null, null));
             }*/
 
-            // Generate JWT token
-            String token = jwtTokenProvider.generateToken(user.getId(), user.getUsername());
+            // Generate JWT token with role and tenant info
+            String role = "USER";
+            Long tenantId = null;
+            String tenantName = null;
+            
+            // Fetch user's role and company info
+            List<UserCompanyRole> userRoles = userCompanyRoleRepository.findByUserId(user.getId());
+            if (!userRoles.isEmpty()) {
+                UserCompanyRole firstRole = userRoles.get(0);
+                if (firstRole.getRole() != null) {
+                    role = firstRole.getRole().getName();
+                }
+                if (firstRole.getCompany() != null) {
+                    tenantId = firstRole.getCompany().getId();
+                    tenantName = firstRole.getCompany().getName();
+                }
+            }
+            
+            String token = jwtTokenProvider.generateToken(user.getId(), user.getUsername(), role, tenantId, tenantName);
 
             // Create user info for response
             LoginResponse.UserInfo userInfo = new LoginResponse.UserInfo(
