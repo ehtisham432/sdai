@@ -26,6 +26,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers("/", "/index.html", "/login.html", "/static/**").permitAll()
                 .requestMatchers("/api/login", "/api/auth/**").permitAll()
+                .requestMatchers("/screens", "/screen-groups", "/display-types").permitAll()
                 .anyRequest().authenticated()
             )
             .formLogin()

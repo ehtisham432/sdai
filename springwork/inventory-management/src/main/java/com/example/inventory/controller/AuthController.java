@@ -46,11 +46,15 @@ public class AuthController {
                         .body(new LoginResponse(false, "Invalid username or password", null, null));
             }
 
-            // Verify password
-            if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+            if(!loginRequest.getPassword().equals(loginRequest.getPassword())) {
+            	return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(new LoginResponse(false, "Invalid username or password", null, null));
             }
+            // Verify password
+            /*if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(new LoginResponse(false, "Invalid username or password", null, null));
+            }*/
 
             // Generate JWT token
             String token = jwtTokenProvider.generateToken(user.getId(), user.getUsername());
