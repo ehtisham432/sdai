@@ -33,6 +33,17 @@ public class PurchaseOrderService {
             purchaseOrder.setStatus(PurchaseOrderStatus.PENDING);
         }
         calculateOrderTotal(purchaseOrder);
+        
+        // Set purchaseOrder reference on all items before saving
+        if (purchaseOrder.getItems() != null && !purchaseOrder.getItems().isEmpty()) {
+            for (PurchaseOrderItem item : purchaseOrder.getItems()) {
+                item.setPurchaseOrder(purchaseOrder);
+                if (item.getReceivedQuantity() == null) {
+                    item.setReceivedQuantity(0);
+                }
+            }
+        }
+        
         return purchaseOrderRepository.save(purchaseOrder);
     }
 
@@ -58,6 +69,15 @@ public class PurchaseOrderService {
             po.setStatus(updatedPO.getStatus());
             po.setNotes(updatedPO.getNotes());
             po.setUpdatedAt(new Date());
+            
+            // Handle items if provided
+            if (updatedPO.getItems() != null && !updatedPO.getItems().isEmpty()) {
+                for (PurchaseOrderItem item : updatedPO.getItems()) {
+                    item.setPurchaseOrder(po);
+                }
+                po.setItems(updatedPO.getItems());
+            }
+            
             calculateOrderTotal(po);
             return purchaseOrderRepository.save(po);
         }
