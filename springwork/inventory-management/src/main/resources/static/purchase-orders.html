@@ -546,6 +546,18 @@
                         </div>
                     </div>
 
+                    <div class="items-section" id="addItemsSection" style="display:none;">
+                        <h3>Add More Items</h3>
+                        <div class="add-item-form">
+                            <select id="detailsItemProduct">
+                                <option value="">Select Product</option>
+                            </select>
+                            <input type="number" id="detailsItemQuantity" placeholder="Quantity" min="1">
+                            <input type="number" id="detailsItemUnitPrice" placeholder="Unit Price" min="0" step="0.01">
+                            <button type="button" class="btn-primary" onclick="addItemToExistingPO()">Add</button>
+                        </div>
+                    </div>
+
                     <div class="receive-section" id="receiveSection">
                         <h3>Receive Inventory</h3>
                         <table class="items-table">

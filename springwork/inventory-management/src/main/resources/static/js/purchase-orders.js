@@ -361,6 +361,12 @@ async function viewPurchaseOrder(id) {
         document.getElementById('receiveBtn').style.display = currentViewingPO.status === 'PENDING' ? 'inline-block' : 'none';
         document.getElementById('deletePoBtn').style.display = currentViewingPO.status === 'PENDING' ? 'inline-block' : 'none';
         
+        // Show add items section for PENDING orders
+        document.getElementById('addItemsSection').style.display = currentViewingPO.status === 'PENDING' ? 'block' : 'none';
+        if (currentViewingPO.status === 'PENDING') {
+            loadProductsForDetailsForm();
+        }
+        
         document.getElementById('orderDetailsContainer').style.display = 'block';
         document.getElementById('createFormContainer').style.display = 'none';
         document.getElementById('receiveSection').classList.remove('active');
@@ -368,6 +374,70 @@ async function viewPurchaseOrder(id) {
     } catch (error) {
         console.error('Error loading PO details:', error);
         showAlert('Error loading purchase order details', 'error');
+    }
+}
+
+// Load products for details form
+function loadProductsForDetailsForm() {
+    const productSelect = document.getElementById('detailsItemProduct');
+    productSelect.innerHTML = '<option value="">Select Product</option>';
+    (window.allProducts || []).forEach(product => {
+        const option = document.createElement('option');
+        option.value = product.id;
+        option.textContent = `${product.name} (${product.company?.name || 'N/A'})`;
+        productSelect.appendChild(option);
+    });
+}
+
+// Add item to existing purchase order
+async function addItemToExistingPO() {
+    if (!currentViewingPO) return;
+    
+    const productId = document.getElementById('detailsItemProduct').value;
+    const quantity = parseInt(document.getElementById('detailsItemQuantity').value);
+    const unitPrice = parseFloat(document.getElementById('detailsItemUnitPrice').value);
+    
+    if (!productId || !quantity || quantity <= 0 || !unitPrice || unitPrice < 0) {
+        showAlert('Please fill all item fields with valid values', 'error', 'detailsAlert');
+        return;
+    }
+    
+    const product = window.allProducts.find(p => p.id == productId);
+    if (!product) {
+        showAlert('Product not found', 'error', 'detailsAlert');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/purchase-orders/${currentViewingPO.id}/items`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+				product: product,
+                productId: productId,
+                quantity: quantity,
+                unitPrice: unitPrice,
+                subtotal: quantity * unitPrice,
+                receivedQuantity: 0
+            })
+        });
+        
+        if (response.ok) {
+            showAlert('Item added successfully', 'success', 'detailsAlert');
+            document.getElementById('detailsItemProduct').value = '';
+            document.getElementById('detailsItemQuantity').value = '';
+            document.getElementById('detailsItemUnitPrice').value = '';
+            // Refresh the purchase order details
+            setTimeout(() => {
+                viewPurchaseOrder(currentViewingPO.id);
+            }, 1000);
+        } else {
+            const error = await response.json();
+            showAlert('Error adding item: ' + (error.message || 'Unknown error'), 'error', 'detailsAlert');
+        }
+    } catch (error) {
+        console.error('Error adding item:', error);
+        showAlert('Error adding item', 'error', 'detailsAlert');
     }
 }
 
