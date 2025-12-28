@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</head>
+<body class="bg-light min-vh-100">
+    <div class="container py-5 px-2">
+        <h1 class="display-5 fw-bold mb-4 text-center">User Management</h1>
+        <div class="card mb-4">
+            <div class="card-body">
+                <div id="errorMsg" class="d-none mb-3 p-2 rounded bg-danger-subtle text-danger fw-semibold text-center"></div>
+                <form id="userForm" class="row g-3 w-100 mx-auto">
+                    <input type="hidden" id="userId">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold" for="username">Username</label>
+                        <input type="text" id="username" class="form-control" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold" for="loginName">Login Name</label>
+                        <input type="text" id="loginName" class="form-control" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold" for="password">Password</label>
+                        <input type="password" id="password" class="form-control" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold" for="email">Email</label>
+                        <input type="email" id="email" class="form-control" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold" for="companyId">Company</label>
+                        <select id="companyId" class="form-select" required>
+                            <option value="">Select Company</option>
+                        </select>
+                    </div>
+                    <div class="col-12 d-flex justify-content-end gap-2 mt-2">
+                        <button type="submit" class="btn btn-primary">Save</button>
+                        <button type="button" id="resetBtn" class="btn btn-secondary">Reset</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <h2 class="h5 fw-bold mb-3">Users List</h2>
+                <!-- Search/Filter UI -->
+                <form id="userSearchForm" class="row g-2 mb-3 w-100">
+                    <div class="col-12 col-sm-6 col-md-3">
+                        <label for="searchUsername" class="form-label">Username</label>
+                        <input type="text" id="searchUsername" class="form-control" placeholder="Username">
+                    </div>
+                    <div class="col-12 col-sm-6 col-md-3">
+                        <label for="searchLoginName" class="form-label">Login Name</label>
+                        <input type="text" id="searchLoginName" class="form-control" placeholder="Login Name">
+                    </div>
+                    <div class="col-12 col-sm-6 col-md-3">
+                        <label for="searchEmail" class="form-label">Email</label>
+                        <input type="text" id="searchEmail" class="form-control" placeholder="Email">
+                    </div>
+                    <div class="col-12 col-sm-6 col-md-3">
+                        <label for="searchCompanyId" class="form-label">Company</label>
+                        <select id="searchCompanyId" class="form-select">
+                            <option value="">All</option>
+                        </select>
+                    </div>
+                    <div class="col-12 d-flex gap-2 justify-content-end mt-2">
+                        <button type="submit" class="btn btn-primary">Search</button>
+                        <button type="button" id="resetSearchBtn" class="btn btn-secondary">Reset</button>
+                    </div>
+                </form>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>ID</th>
+                                <th>Username</th>
+                                <th>Login Name</th>
+                                <th>Email</th>
+                                <th>Company</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTable">
+                            <!-- Users will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        const apiUrl = '/users';
+        const companyApiUrl = '/companies';
+        const userForm = document.getElementById('userForm');
+        const usersTable = document.getElementById('usersTable');
+        const resetBtn = document.getElementById('resetBtn');
+    const companySelect = document.getElementById('companyId');
+    // For search filters
+    const searchCompanySelect = document.getElementById('searchCompanyId');
+
+        function fetchCompanies() {
+            fetch(companyApiUrl)
+                .then(res => res.json())
+                .then(companies => {
+                    companySelect.innerHTML = '<option value="">Select Company</option>';
+                    searchCompanySelect.innerHTML = '<option value="">All</option>';
+                    companies.forEach(company => {
+                        companySelect.innerHTML += `<option value="${company.id}">${company.name}</option>`;
+                        searchCompanySelect.innerHTML += `<option value="${company.id}">${company.name}</option>`;
+                    });
+                });
+        }
+
+        function fetchUsers(filters = {}) {
+            // Build query string from filters
+            const params = new URLSearchParams();
+            if (filters.username) params.append('username', filters.username);
+            if (filters.loginName) params.append('loginName', filters.loginName);
+            if (filters.email) params.append('email', filters.email);
+            if (filters.companyId) params.append('companyId', filters.companyId);
+            const url = params.toString() ? `${apiUrl}?${params.toString()}` : apiUrl;
+            fetch(url)
+                .then(res => res.json())
+                .then(users => {
+                    usersTable.innerHTML = '';
+                    users.forEach(user => {
+                        usersTable.innerHTML += `
+                            <tr>
+                                <td>${user.id}</td>
+                                <td>${user.username}</td>
+                                <td>${user.loginName || ''}</td>
+                                <td>${user.email}</td>
+                                <td>${user.company ? user.company.name : ''}</td>
+                                <td class="d-flex gap-2">
+                                    <button class="btn btn-warning btn-sm text-white" onclick="editUser(${user.id})">Edit</button>
+                                    <button class="btn btn-danger btn-sm" onclick="deleteUser(${user.id})">Delete</button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                });
+        }
+        // Handle search form submit
+        const userSearchForm = document.getElementById('userSearchForm');
+        userSearchForm.onsubmit = function(e) {
+            e.preventDefault();
+            const filters = {
+                username: document.getElementById('searchUsername').value.trim(),
+                loginName: document.getElementById('searchLoginName').value.trim(),
+                email: document.getElementById('searchEmail').value.trim(),
+                companyId: document.getElementById('searchCompanyId').value
+            };
+            fetchUsers(filters);
+        };
+
+        // Handle reset search
+        document.getElementById('resetSearchBtn').onclick = function() {
+            document.getElementById('searchUsername').value = '';
+            document.getElementById('searchLoginName').value = '';
+            document.getElementById('searchEmail').value = '';
+            document.getElementById('searchCompanyId').value = '';
+            fetchUsers();
+        };
+
+        userForm.onsubmit = function(e) {
+            e.preventDefault();
+            const id = document.getElementById('userId').value;
+            const username = document.getElementById('username').value;
+            const loginName = document.getElementById('loginName').value;
+            const password = document.getElementById('password').value;
+            const email = document.getElementById('email').value;
+            const companyId = document.getElementById('companyId').value;
+
+            const user = { username, loginName, password, email, company: { id: companyId } };
+            let method = 'POST';
+            let url = apiUrl;
+            if (id) {
+                method = 'PUT';
+                url += `/${id}`;
+                user.id = id;
+            }
+
+            // Hide error message before request
+            const errorMsg = document.getElementById('errorMsg');
+            errorMsg.classList.add('hidden');
+            errorMsg.textContent = '';
+
+            fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(user)
+            })
+            .then(async (res) => {
+                if (!res.ok) {
+                    const msg = await res.text();
+                    errorMsg.textContent = msg || 'An error occurred';
+                    errorMsg.classList.remove('hidden');
+                    throw new Error(msg);
+                }
+                return res.json();
+            })
+            .then(() => {
+                userForm.reset();
+                document.getElementById('userId').value = '';
+                fetchUsers();
+            })
+            .catch(() => {});
+        };
+
+        resetBtn.onclick = function() {
+            userForm.reset();
+            document.getElementById('userId').value = '';
+        };
+
+        window.editUser = function(id) {
+            fetch(`${apiUrl}/${id}`)
+                .then(res => res.json())
+                .then(user => {
+                    document.getElementById('userId').value = user.id;
+                    document.getElementById('username').value = user.username;
+                    document.getElementById('loginName').value = user.loginName || '';
+                    document.getElementById('password').value = user.password;
+                    document.getElementById('email').value = user.email;
+                    document.getElementById('companyId').value = user.company ? user.company.id : '';
+                });
+        };
+
+        window.deleteUser = function(id) {
+            fetch(`${apiUrl}/${id}`, { method: 'DELETE' })
+                .then(() => fetchUsers());
+        };
+
+    fetchCompanies();
+    fetchUsers();
+    </script>
+</body>
+</html>

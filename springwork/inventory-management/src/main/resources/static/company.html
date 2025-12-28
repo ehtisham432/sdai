@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Company Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</head>
+<body class="bg-light min-vh-100">
+    <div class="container py-5 px-2">
+        <h1 class="display-5 fw-bold mb-4 text-center">Company Management</h1>
+        <div class="card mb-4">
+            <div class="card-body">
+                <form id="companyForm" class="row g-3 w-100 mx-auto">
+                    <input type="hidden" id="companyId">
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold" for="name">Name</label>
+                        <input type="text" id="name" class="form-control" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold" for="address">Address</label>
+                        <input type="text" id="address" class="form-control" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold" for="logo">Logo</label>
+                        <input type="file" id="logo" class="form-control" accept="image/*">
+                        <div id="logoPreview" class="mt-2"></div>
+                    </div>
+                    <div class="col-12 d-flex justify-content-end gap-2 mt-2">
+                        <button type="submit" class="btn btn-primary">Save</button>
+                        <button type="button" id="resetBtn" class="btn btn-secondary">Reset</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <h2 class="h5 fw-bold mb-3">Companies List</h2>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Address</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="companiesTable">
+                            <!-- Companies will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        const apiUrl = '/companies';
+        const companyForm = document.getElementById('companyForm');
+        const companiesTable = document.getElementById('companiesTable');
+        const resetBtn = document.getElementById('resetBtn');
+
+        function fetchCompanies() {
+            fetch(apiUrl)
+                .then(res => res.json())
+                .then(companies => {
+                    companiesTable.innerHTML = '';
+                    companies.forEach(company => {
+                        companiesTable.innerHTML += `
+                            <tr>
+                                <td>${company.id}</td>
+                                <td>${company.name}</td>
+                                <td>${company.address}</td>
+                                <td class="d-flex gap-2">
+                                    <button class="btn btn-warning btn-sm text-white" onclick="editCompany(${company.id})">Edit</button>
+                                    <button class="btn btn-danger btn-sm" onclick="deleteCompany(${company.id})">Delete</button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                });
+        }
+
+        companyForm.onsubmit = function(e) {
+            e.preventDefault();
+            const id = document.getElementById('companyId').value;
+            const name = document.getElementById('name').value;
+            const address = document.getElementById('address').value;
+            const logoInput = document.getElementById('logo');
+            const company = { name, address };
+            if (id) company.id = id;
+            let method = id ? 'PUT' : 'POST';
+            let url = apiUrl + (id ? `/${id}` : '');
+            const formData = new FormData();
+            formData.append('company', new Blob([JSON.stringify(company)], { type: 'application/json' }));
+            if (logoInput.files.length > 0) {
+                formData.append('logo', logoInput.files[0]);
+            }
+            fetch(url, {
+                method,
+                body: formData
+            })
+            .then(() => {
+                companyForm.reset();
+                document.getElementById('companyId').value = '';
+                document.getElementById('logoPreview').innerHTML = '';
+                fetchCompanies();
+            });
+        };
+        // Logo preview
+        document.getElementById('logo').onchange = function() {
+            const logoPreview = document.getElementById('logoPreview');
+            logoPreview.innerHTML = '';
+            if (this.files && this.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    logoPreview.innerHTML = `<img src="${e.target.result}" class="rounded border" style="max-width:80px;max-height:80px;">`;
+                };
+                reader.readAsDataURL(this.files[0]);
+            }
+        };
+
+        resetBtn.onclick = function() {
+            companyForm.reset();
+            document.getElementById('companyId').value = '';
+        };
+
+        window.editCompany = function(id) {
+            fetch(`${apiUrl}/${id}`)
+                .then(res => res.json())
+                .then(company => {
+                    document.getElementById('companyId').value = company.id;
+                    document.getElementById('name').value = company.name;
+                    document.getElementById('address').value = company.address;
+                });
+        };
+
+        window.deleteCompany = function(id) {
+            fetch(`${apiUrl}/${id}`, { method: 'DELETE' })
+                .then(() => fetchCompanies());
+        };
+
+        fetchCompanies();
+    </script>
+</body>
+</html>
