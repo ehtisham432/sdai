@@ -203,6 +203,11 @@ function openCreatePOModal() {
     formItems = [];
     updateItemsTable();
     
+    // Re-enable the add item section for new orders
+    document.querySelector('.add-item-form').style.display = 'grid';
+    document.querySelector('.items-section').style.opacity = '1';
+    document.querySelector('.items-section').style.pointerEvents = 'auto';
+    
     // Set today's date
     document.getElementById('poOrderDate').valueAsDate = new Date();
     
@@ -291,15 +296,19 @@ function setupFormSubmission() {
                 ? new Date(document.getElementById('poDeliveryDate').value)
                 : null,
             status: document.getElementById('poStatus').value,
-            notes: document.getElementById('poNotes').value,
-            items: formItems.map(item => ({
+            notes: document.getElementById('poNotes').value
+        };
+        
+        // Only include items for new purchase orders, not for updates
+        if (!currentEditingPO) {
+            po.items = formItems.map(item => ({
                 product: { id: item.productId },
                 quantity: item.quantity,
                 unitPrice: item.unitPrice,
                 subtotal: item.subtotal,
                 receivedQuantity: 0
-            }))
-        };
+            }));
+        }
         
         try {
             let response;
@@ -425,7 +434,6 @@ function renderInventoryProgress() {
 function editPurchaseOrder() {
     if (!currentViewingPO) return;
     
-    closePODetailsModal();
     currentEditingPO = currentViewingPO;
     
     document.getElementById('poModalTitle').textContent = 'Edit Purchase Order';
@@ -437,16 +445,16 @@ function editPurchaseOrder() {
     document.getElementById('poStatus').value = currentViewingPO.status;
     document.getElementById('poNotes').value = currentViewingPO.notes || '';
     
-    // Load existing items
-    formItems = (currentViewingPO.items || []).map(item => ({
-        product: item.product,
-        productId: item.product?.id,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        subtotal: item.subtotal
-    }));
-    
+    // Clear form items - items must be managed separately via add/edit/remove endpoints
+    formItems = [];
     updateItemsTable();
+    
+    // Disable the add item section when editing
+    document.querySelector('.add-item-form').style.display = 'none';
+    document.querySelector('.items-section').style.opacity = '0.6';
+    document.querySelector('.items-section').style.pointerEvents = 'none';
+    
+    closePODetailsModal();
     showModal('poModal');
 }
 

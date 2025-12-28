@@ -70,14 +70,6 @@ public class PurchaseOrderService {
             po.setNotes(updatedPO.getNotes());
             po.setUpdatedAt(new Date());
             
-            // Handle items if provided
-            if (updatedPO.getItems() != null && !updatedPO.getItems().isEmpty()) {
-                for (PurchaseOrderItem item : updatedPO.getItems()) {
-                    item.setPurchaseOrder(po);
-                }
-                po.setItems(updatedPO.getItems());
-            }
-            
             calculateOrderTotal(po);
             return purchaseOrderRepository.save(po);
         }
