@@ -138,11 +138,22 @@ public class PurchaseOrderService {
     public boolean removeItemFromPurchaseOrder(Long itemId) {
         Optional<PurchaseOrderItem> item = purchaseOrderItemRepository.findById(itemId);
         if (item.isPresent()) {
-            PurchaseOrder po = item.get().getPurchaseOrder();
+            PurchaseOrderItem poItem = item.get();
+            PurchaseOrder po = poItem.getPurchaseOrder();
+            
+            // Remove item from the PO's items collection first
+            if (po != null && po.getItems() != null) {
+                po.getItems().remove(poItem);
+            }
+            
+            // Delete the item
             purchaseOrderItemRepository.deleteById(itemId);
-            // Update the total amount in the PO
-            calculateOrderTotal(po);
-            purchaseOrderRepository.save(po);
+            
+            // Recalculate and save the PO
+            if (po != null) {
+                calculateOrderTotal(po);
+                purchaseOrderRepository.save(po);
+            }
             return true;
         }
         return false;

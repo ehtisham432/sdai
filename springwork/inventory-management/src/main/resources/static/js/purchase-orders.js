@@ -345,7 +345,10 @@ async function viewPurchaseOrder(id) {
                 <td>$${(item.unitPrice || 0).toFixed(2)}</td>
                 <td>$${(item.subtotal || 0).toFixed(2)}</td>
                 <td>${item.receivedQuantity || 0} / ${item.quantity}</td>
-                <td><button class="btn-secondary" onclick="editItem(${item.id})" style="padding: 4px 8px; font-size: 12px;">Edit</button></td>
+                <td>
+                    <button class="btn-secondary" onclick="editItem(${item.id})" style="padding: 4px 8px; font-size: 12px; margin-right: 5px;">Edit</button>
+                    <button class="btn-danger" onclick="deleteItemFromPO(${item.id})" style="padding: 4px 8px; font-size: 12px;">Delete</button>
+                </td>
             </tr>
         `).join('');
         
@@ -616,7 +619,30 @@ async function editItem(itemId) {
     }
 }
 
-// Submit receive inventory
+// Delete item from purchase order
+async function deleteItemFromPO(itemId) {
+    if (!currentViewingPO) return;
+    if (!confirm('Are you sure you want to delete this item?')) return;
+    
+    try {
+        const response = await fetch(`/purchase-orders/items/${itemId}`, {
+            method: 'DELETE'
+        });
+        
+        if (response.ok) {
+            showAlert('Item deleted successfully', 'success', 'detailsAlert');
+            setTimeout(() => {
+                viewPurchaseOrder(currentViewingPO.id);
+            }, 1000);
+        } else {
+            const error = await response.json();
+            showAlert('Error deleting item: ' + (error.message || 'Unknown error'), 'error', 'detailsAlert');
+        }
+    } catch (error) {
+        console.error('Error deleting item:', error);
+        showAlert('Error deleting item', 'error', 'detailsAlert');
+    }
+}
 async function submitReceiveInventory() {
     if (!currentViewingPO) return;
     
