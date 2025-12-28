@@ -1,2 +1,2 @@
 # sdai
-software development by using AI
+software development by Ehtisham
