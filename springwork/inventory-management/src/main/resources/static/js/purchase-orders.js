@@ -1,5 +1,6 @@
 // Global state
 let allPurchaseOrders = [];
+let searchResults = [];
 let currentEditingPO = null;
 let currentViewingPO = null;
 let formItems = [];
@@ -9,7 +10,6 @@ let receiveItems = [];
 document.addEventListener('DOMContentLoaded', function() {
     loadCompanies();
     loadProducts();
-    loadPurchaseOrders();
     setupFormSubmission();
 });
 
@@ -55,45 +55,49 @@ async function loadProducts() {
             option.textContent = `${product.name} (${product.company?.name || 'N/A'})`;
             productSelect.appendChild(option);
         });
+        
+        window.allProducts = products;
     } catch (error) {
         console.error('Error loading products:', error);
     }
 }
 
-// Load all purchase orders
-async function loadPurchaseOrders() {
+// Perform search with filters
+async function performSearch() {
     try {
         const companyId = document.getElementById('companyFilter').value;
-        const url = companyId 
-            ? `/purchase-orders?companyId=${companyId}` 
-            : '/purchase-orders';
+        const status = document.getElementById('statusFilter').value;
+        
+        let url = '/purchase-orders';
+        const params = [];
+        
+        if (companyId) params.push(`companyId=${companyId}`);
+        if (status) params.push(`status=${status}`);
+        
+        if (params.length > 0) {
+            url += '?' + params.join('&');
+        }
         
         const response = await fetch(url);
-        allPurchaseOrders = await response.json();
-        renderPurchaseOrders();
+        searchResults = await response.json();
+        renderSearchResults();
+        switchTab('results-tab', null);
     } catch (error) {
-        console.error('Error loading purchase orders:', error);
-        showAlert('Error loading purchase orders', 'error');
+        console.error('Error performing search:', error);
+        showAlert('Error performing search', 'error');
     }
 }
 
-// Render purchase orders in all tables
-function renderPurchaseOrders() {
-    renderAllOrdersTable();
-    renderPendingOrdersTable();
-    renderReceivedOrdersTable();
-}
-
-// Render all orders table
-function renderAllOrdersTable() {
-    const tbody = document.getElementById('poTableBody');
+// Render search results table
+function renderSearchResults() {
+    const tbody = document.getElementById('resultsTableBody');
     
-    if (allPurchaseOrders.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No purchase orders found</td></tr>';
+    if (searchResults.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No orders found</td></tr>';
         return;
     }
 
-    tbody.innerHTML = allPurchaseOrders.map(po => `
+    tbody.innerHTML = searchResults.map(po => `
         <tr>
             <td><strong>${po.poNumber}</strong></td>
             <td>${po.supplier}</td>
@@ -102,123 +106,78 @@ function renderAllOrdersTable() {
             <td>$${(po.totalAmount || 0).toFixed(2)}</td>
             <td><span class="status-badge status-${po.status.toLowerCase()}">${po.status}</span></td>
             <td>
-                <div class="action-buttons">
-                    <button class="btn-primary" onclick="viewPurchaseOrder(${po.id})">View</button>
-                    <button class="btn-danger" onclick="deletePurchaseOrder(${po.id})">Delete</button>
-                </div>
+                <button class="btn-primary" onclick="viewPurchaseOrder(${po.id})" style="padding: 6px 12px; font-size: 12px;">View</button>
             </td>
         </tr>
     `).join('');
 }
 
-// Render pending orders table
-function renderPendingOrdersTable() {
-    const tbody = document.getElementById('pendingTableBody');
-    const pending = allPurchaseOrders.filter(po => po.status === 'PENDING');
-    
-    if (pending.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No pending orders</td></tr>';
-        return;
-    }
-
-    tbody.innerHTML = pending.map(po => `
-        <tr>
-            <td><strong>${po.poNumber}</strong></td>
-            <td>${po.supplier}</td>
-            <td>${po.company?.name || 'N/A'}</td>
-            <td>${formatDate(po.expectedDeliveryDate)}</td>
-            <td>$${(po.totalAmount || 0).toFixed(2)}</td>
-            <td>
-                <div class="action-buttons">
-                    <button class="btn-primary" onclick="viewPurchaseOrder(${po.id})">View</button>
-                    <button class="btn-danger" onclick="deletePurchaseOrder(${po.id})">Delete</button>
-                </div>
-            </td>
-        </tr>
-    `).join('');
-}
-
-// Render received orders table
-function renderReceivedOrdersTable() {
-    const tbody = document.getElementById('receivedTableBody');
-    const received = allPurchaseOrders.filter(po => po.status === 'RECEIVED');
-    
-    if (received.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No received orders</td></tr>';
-        return;
-    }
-
-    tbody.innerHTML = received.map(po => `
-        <tr>
-            <td><strong>${po.poNumber}</strong></td>
-            <td>${po.supplier}</td>
-            <td>${po.company?.name || 'N/A'}</td>
-            <td>${formatDate(po.updatedAt)}</td>
-            <td>$${(po.totalAmount || 0).toFixed(2)}</td>
-            <td>${po.items?.length || 0} items</td>
-        </tr>
-    `).join('');
-}
-
-// Filter purchase orders
-function filterPurchaseOrders() {
-    const companyId = document.getElementById('companyFilter').value;
-    const status = document.getElementById('statusFilter').value;
-    
-    let filtered = allPurchaseOrders;
-    
-    if (companyId) {
-        filtered = filtered.filter(po => po.company?.id == companyId);
-    }
-    
-    if (status) {
-        filtered = filtered.filter(po => po.status === status);
-    }
-    
-    allPurchaseOrders = filtered;
-    renderPurchaseOrders();
-}
-
-// Clear filters
-function clearFilters() {
+// Reset filters and clear search
+function resetFilters() {
     document.getElementById('companyFilter').value = '';
     document.getElementById('statusFilter').value = '';
-    loadPurchaseOrders();
+    searchResults = [];
+    renderSearchResults();
+    clearDetailsTab();
 }
 
 // Switch between tabs
-function switchTab(tabName) {
-    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-    document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+function switchTab(tabName, event) {
+    if (event) {
+        event.preventDefault();
+    }
     
-    document.getElementById(tabName).classList.add('active');
-    event.target.classList.add('active');
+    // Hide all tabs and remove active class
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Show selected tab and activate button
+    const selectedTab = document.getElementById(tabName);
+    if (selectedTab) {
+        selectedTab.classList.add('active');
+    }
+    
+    // Find and activate the corresponding button by checking onclick attribute
+    const buttons = document.querySelectorAll('.tab-button');
+    buttons.forEach(btn => {
+        if (btn.getAttribute('onclick').includes(tabName)) {
+            btn.classList.add('active');
+        }
+    });
 }
 
-// Open create PO modal
-function openCreatePOModal() {
+// Create new purchase order form - open in Tab 3
+function createNewPurchaseOrder() {
     currentEditingPO = null;
-    document.getElementById('poModalTitle').textContent = 'New Purchase Order';
+    document.getElementById('formTitle').textContent = 'New Purchase Order';
     document.getElementById('poForm').reset();
     formItems = [];
     updateItemsTable();
     
-    // Re-enable the add item section for new orders
-    document.querySelector('.add-item-form').style.display = 'grid';
-    document.querySelector('.items-section').style.opacity = '1';
-    document.querySelector('.items-section').style.pointerEvents = 'auto';
+    document.getElementById('orderDetailsContainer').style.display = 'none';
+    document.getElementById('createFormContainer').style.display = 'block';
     
-    // Set today's date
     document.getElementById('poOrderDate').valueAsDate = new Date();
-    
-    showModal('poModal');
+    switchTab('details-tab', null);
 }
 
-// Close PO modal
-function closePOModal() {
-    hideModal('poModal');
-    formItems = [];
+// Close details tab and show form
+function clearDetailsTab() {
     currentEditingPO = null;
+    currentViewingPO = null;
+    formItems = [];
+    receiveItems = [];
+    
+    document.getElementById('orderDetailsContainer').style.display = 'none';
+    document.getElementById('createFormContainer').style.display = 'block';
+    document.getElementById('poForm').reset();
+    updateItemsTable();
+    document.getElementById('receiveSection').classList.remove('active');
+    document.getElementById('poOrderDate').valueAsDate = new Date();
 }
 
 // Add item to form
@@ -228,11 +187,11 @@ function addItemToPOForm() {
     const unitPrice = parseFloat(document.getElementById('itemUnitPrice').value);
     
     if (!productId || !quantity || quantity <= 0 || !unitPrice || unitPrice < 0) {
-        showAlert('Please fill all item fields with valid values', 'error', 'poAlert');
+        showAlert('Please fill all item fields with valid values', 'error');
         return;
     }
     
-    const product = allProducts.find(p => p.id == productId);
+    const product = window.allProducts.find(p => p.id == productId);
     if (!product) return;
     
     formItems.push({
@@ -282,7 +241,7 @@ function setupFormSubmission() {
         const userId = getUserIdFromToken();
         
         if (!companyId || !userId) {
-            showAlert('Company and user information are required', 'error', 'poAlert');
+            showAlert('Company and user information are required', 'error');
             return;
         }
         
@@ -301,8 +260,13 @@ function setupFormSubmission() {
         
         // Only include items for new purchase orders, not for updates
         if (!currentEditingPO) {
+            if (formItems.length === 0) {
+                showAlert('Please add at least one item', 'error');
+                return;
+            }
             po.items = formItems.map(item => ({
-                product: { id: item.productId },
+				product : item.product,
+                productId: item.productId,
                 quantity: item.quantity,
                 unitPrice: item.unitPrice,
                 subtotal: item.subtotal,
@@ -327,24 +291,27 @@ function setupFormSubmission() {
             }
             
             if (response.ok) {
-                showAlert(currentEditingPO ? 'Purchase order updated successfully' : 'Purchase order created successfully', 'success', 'poAlert');
+                showAlert(currentEditingPO ? 'Order updated successfully' : 'Order created successfully', 'success');
+                formItems = [];
+                document.getElementById('poForm').reset();
                 setTimeout(() => {
-                    closePOModal();
-                    loadPurchaseOrders();
+                    performSearch();
                 }, 1500);
             } else {
                 const error = await response.json();
-                showAlert('Error saving purchase order: ' + error.message, 'error', 'poAlert');
+                showAlert('Error saving order: ' + error.message, 'error');
             }
         } catch (error) {
             console.error('Error:', error);
-            showAlert('Error saving purchase order', 'error', 'poAlert');
+            showAlert('Error saving order', 'error');
         }
     });
 }
 
 // View purchase order details
 async function viewPurchaseOrder(id) {
+    if (!id) return;
+    
     try {
         const response = await fetch(`/purchase-orders/${id}`);
         currentViewingPO = await response.json();
@@ -394,7 +361,10 @@ async function viewPurchaseOrder(id) {
         document.getElementById('receiveBtn').style.display = currentViewingPO.status === 'PENDING' ? 'inline-block' : 'none';
         document.getElementById('deletePoBtn').style.display = currentViewingPO.status === 'PENDING' ? 'inline-block' : 'none';
         
-        showModal('poDetailsModal');
+        document.getElementById('orderDetailsContainer').style.display = 'block';
+        document.getElementById('createFormContainer').style.display = 'none';
+        document.getElementById('receiveSection').classList.remove('active');
+        switchTab('details-tab', null);
     } catch (error) {
         console.error('Error loading PO details:', error);
         showAlert('Error loading purchase order details', 'error');
@@ -436,7 +406,7 @@ function editPurchaseOrder() {
     
     currentEditingPO = currentViewingPO;
     
-    document.getElementById('poModalTitle').textContent = 'Edit Purchase Order';
+    document.getElementById('formTitle').textContent = 'Edit Purchase Order';
     document.getElementById('poNumber').value = currentViewingPO.poNumber;
     document.getElementById('poCompany').value = currentViewingPO.company?.id || '';
     document.getElementById('poSupplier').value = currentViewingPO.supplier;
@@ -450,33 +420,32 @@ function editPurchaseOrder() {
     updateItemsTable();
     
     // Disable the add item section when editing
-    document.querySelector('.add-item-form').style.display = 'none';
-    document.querySelector('.items-section').style.opacity = '0.6';
-    document.querySelector('.items-section').style.pointerEvents = 'none';
+    document.getElementById('itemsSection').style.display = 'none';
     
-    closePODetailsModal();
-    showModal('poModal');
+    document.getElementById('orderDetailsContainer').style.display = 'none';
+    document.getElementById('createFormContainer').style.display = 'block';
 }
 
 // Delete purchase order
-async function deletePurchaseOrder(id) {
+async function deletePurchaseOrder() {
+    if (!currentViewingPO) return;
     if (!confirm('Are you sure you want to delete this purchase order?')) return;
     
     try {
-        const response = await fetch(`/purchase-orders/${id}`, {
+        const response = await fetch(`/purchase-orders/${currentViewingPO.id}`, {
             method: 'DELETE'
         });
         
         if (response.ok) {
-            closePODetailsModal();
-            showAlert('Purchase order deleted successfully', 'success');
-            setTimeout(() => loadPurchaseOrders(), 1500);
+            showAlert('Order deleted successfully', 'success');
+            clearDetailsTab();
+            setTimeout(() => performSearch(), 1500);
         } else {
-            showAlert('Can only delete PENDING purchase orders', 'error');
+            showAlert('Can only delete PENDING orders', 'error');
         }
     } catch (error) {
         console.error('Error deleting purchase order:', error);
-        showAlert('Error deleting purchase order', 'error');
+        showAlert('Error deleting order', 'error');
     }
 }
 
@@ -485,7 +454,7 @@ function showReceiveInventoryForm() {
     if (!currentViewingPO || currentViewingPO.status !== 'PENDING') return;
     
     document.getElementById('detailsActions').style.display = 'none';
-    document.getElementById('receiveSection').style.display = 'block';
+    document.getElementById('receiveSection').classList.add('active');
     
     receiveItems = [];
     const tbody = document.getElementById('receiveItemsTable');
@@ -507,6 +476,13 @@ function showReceiveInventoryForm() {
             </tr>
         `;
     }).join('');
+}
+
+// Cancel receive inventory
+function cancelReceiveInventory() {
+    document.getElementById('receiveSection').classList.remove('active');
+    document.getElementById('detailsActions').style.display = 'flex';
+    receiveItems = [];
 }
 
 // Update receive quantity
@@ -591,8 +567,8 @@ async function submitReceiveInventory() {
         if (response.ok) {
             showAlert('Inventory received successfully', 'success', 'detailsAlert');
             setTimeout(() => {
-                closePODetailsModal();
-                loadPurchaseOrders();
+                cancelReceiveInventory();
+                performSearch();
             }, 1500);
         } else {
             showAlert('Error receiving inventory', 'error', 'detailsAlert');
@@ -603,22 +579,7 @@ async function submitReceiveInventory() {
     }
 }
 
-// Close PO details modal
-function closePODetailsModal() {
-    hideModal('poDetailsModal');
-    currentViewingPO = null;
-    document.getElementById('detailsActions').style.display = 'flex';
-    document.getElementById('receiveSection').style.display = 'none';
-}
 
-// Helper functions
-function showModal(modalId) {
-    document.getElementById(modalId).classList.add('active');
-}
-
-function hideModal(modalId) {
-    document.getElementById(modalId).classList.remove('active');
-}
 
 function showAlert(message, type, alertId = 'alert') {
     const alert = document.getElementById(alertId);

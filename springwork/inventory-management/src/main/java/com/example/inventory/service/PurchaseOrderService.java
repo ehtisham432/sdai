@@ -34,13 +34,20 @@ public class PurchaseOrderService {
         }
         calculateOrderTotal(purchaseOrder);
         
-        // Set purchaseOrder reference on all items before saving
+        // Set purchaseOrder reference on all items before saving and load Product entities
         if (purchaseOrder.getItems() != null && !purchaseOrder.getItems().isEmpty()) {
             for (PurchaseOrderItem item : purchaseOrder.getItems()) {
                 item.setPurchaseOrder(purchaseOrder);
                 if (item.getReceivedQuantity() == null) {
                     item.setReceivedQuantity(0);
                 }
+                // Load the Product entity - the product might come as a stub with only ID
+//                if (item.getProduct() != null && item.getProduct().getId() != null) {
+//                    Optional<Product> product = productRepository.findById(item.getProduct().getId());
+//                    if (product.isPresent()) {
+//                        item.setProduct(product.get());
+//                    }
+//                }
             }
         }
         
