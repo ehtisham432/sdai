@@ -517,6 +517,59 @@ function updateReceiveQuantity(itemId, quantity) {
     }
 }
 
+// Edit purchase order item
+async function editItem(itemId) {
+    if (!currentViewingPO) return;
+    
+    const item = currentViewingPO.items?.find(i => i.id === itemId);
+    if (!item) {
+        showAlert('Item not found', 'error', 'detailsAlert');
+        return;
+    }
+    
+    const newQuantity = prompt(`Edit quantity for ${item.product?.name || 'Product'}:`, item.quantity);
+    if (newQuantity === null) return;
+    
+    const qty = parseInt(newQuantity);
+    if (isNaN(qty) || qty <= 0) {
+        showAlert('Please enter a valid quantity', 'error', 'detailsAlert');
+        return;
+    }
+    
+    const newPrice = prompt(`Edit unit price:`, item.unitPrice);
+    if (newPrice === null) return;
+    
+    const price = parseFloat(newPrice);
+    if (isNaN(price) || price < 0) {
+        showAlert('Please enter a valid price', 'error', 'detailsAlert');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/purchase-orders/items/${itemId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                quantity: qty,
+                unitPrice: price,
+                subtotal: qty * price
+            })
+        });
+        
+        if (response.ok) {
+            showAlert('Item updated successfully', 'success', 'detailsAlert');
+            setTimeout(() => {
+                viewPurchaseOrder(currentViewingPO.id);
+            }, 1000);
+        } else {
+            showAlert('Error updating item', 'error', 'detailsAlert');
+        }
+    } catch (error) {
+        console.error('Error updating item:', error);
+        showAlert('Error updating item', 'error', 'detailsAlert');
+    }
+}
+
 // Submit receive inventory
 async function submitReceiveInventory() {
     if (!currentViewingPO) return;
