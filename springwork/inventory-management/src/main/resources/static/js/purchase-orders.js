@@ -13,11 +13,24 @@ document.addEventListener('DOMContentLoaded', function() {
     setupFormSubmission();
 });
 
-// Load companies for dropdown
+// Load companies for dropdown - only user assigned companies
 async function loadCompanies() {
     try {
-        const response = await fetch('/companies');
+        const userId = getUserIdFromToken();
+        if (!userId) {
+            showAlert('User information not available', 'error');
+            return;
+        }
+        
+        // Fetch user-assigned companies
+        const response = await fetch(`/users/${userId}/companies`);
         const companies = await response.json();
+        
+        // Get user's primary company from JWT token for default selection
+        let userCompanyId = getCompanyIdFromToken();
+        console.log('User ID:', userId);
+        console.log('User Company ID from token:', userCompanyId);
+        console.log('Available companies:', companies);
         
         const companySelects = document.querySelectorAll('#poCompany, #companyFilter');
         companySelects.forEach(select => {
@@ -33,7 +46,15 @@ async function loadCompanies() {
                 select.appendChild(option);
             });
             
-            if (currentValue) select.value = currentValue;
+            // Set default selection for create form using JWT claim, but not for filter
+            if (select.id === 'poCompany' && userCompanyId) {
+                // Convert to string for comparison since select.value is always string
+                const companyIdStr = String(userCompanyId);
+                select.value = companyIdStr;
+                console.log(`Set company dropdown to: ${companyIdStr}, current value: ${select.value}`);
+            } else if (currentValue && select.id === 'poCompany') {
+                select.value = currentValue;
+            }
         });
     } catch (error) {
         console.error('Error loading companies:', error);
@@ -713,6 +734,27 @@ function getUserIdFromToken() {
         const payload = token.split('.')[1];
         const decoded = JSON.parse(atob(payload));
         return decoded.userId || decoded.sub;
+    } catch (error) {
+        console.error('Error decoding token:', error);
+        return null;
+    }
+}
+
+function getCompanyIdFromToken() {
+    const token = localStorage.getItem('jwtToken');
+    if (!token) {
+        console.log('No JWT token found in localStorage');
+        return null;
+    }
+    
+    try {
+        const payload = token.split('.')[1];
+        const decoded = JSON.parse(atob(payload));
+        console.log('Decoded JWT claims:', decoded);
+        
+        const companyId = decoded.tenantId || decoded.userCompanyId || null;
+        console.log('Extracted company ID:', companyId);
+        return companyId;
     } catch (error) {
         console.error('Error decoding token:', error);
         return null;

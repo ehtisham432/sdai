@@ -140,4 +140,17 @@ public class UserController {
     public void deleteUser(@PathVariable Long id) {
         userRepository.deleteById(id);
     }
+
+    @GetMapping("/{id}/companies")
+    public ResponseEntity<?> getUserCompanies(@PathVariable Long id) {
+        User user = userRepository.findById(id).orElse(null);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
+        }
+        java.util.Set<com.example.inventory.Company> companies = user.getCompanies();
+        if (companies == null) {
+            companies = new java.util.HashSet<>();
+        }
+        return ResponseEntity.ok(companies);
+    }
 }
