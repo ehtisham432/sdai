@@ -68,16 +68,10 @@ async function loadProducts() {
         const response = await fetch('/products');
         const products = await response.json();
         
-        const productSelect = document.getElementById('itemProduct');
-        productSelect.innerHTML = '<option value="">Select Product</option>';
-        products.forEach(product => {
-            const option = document.createElement('option');
-            option.value = product.id;
-            option.textContent = `${product.name} (${product.company?.name || 'N/A'})`;
-            productSelect.appendChild(option);
-        });
-        
         window.allProducts = products;
+        
+        // Setup autocomplete for main form
+        setupProductAutocomplete('itemProduct', 'itemProductSuggestions', 'poCompany');
     } catch (error) {
         console.error('Error loading products:', error);
     }
@@ -203,7 +197,9 @@ function clearDetailsTab() {
 
 // Add item to form
 function addItemToPOForm() {
-    const productId = document.getElementById('itemProduct').value;
+    const productInput = document.getElementById('itemProduct');
+    const productId = productInput.getAttribute('data-product-id');
+    const productName = productInput.value;
     const quantity = parseInt(document.getElementById('itemQuantity').value);
     const unitPrice = parseFloat(document.getElementById('itemUnitPrice').value);
     
@@ -213,7 +209,10 @@ function addItemToPOForm() {
     }
     
     const product = window.allProducts.find(p => p.id == productId);
-    if (!product) return;
+    if (!product) {
+        showAlert('Please select a valid product from the dropdown', 'error');
+        return;
+    }
     
     formItems.push({
         product: product,
@@ -224,7 +223,8 @@ function addItemToPOForm() {
     });
     
     updateItemsTable();
-    document.getElementById('itemProduct').value = '';
+    productInput.value = '';
+    productInput.setAttribute('data-product-id', '');
     document.getElementById('itemQuantity').value = '';
     document.getElementById('itemUnitPrice').value = '';
 }
@@ -255,6 +255,20 @@ function removeItemFromForm(index) {
 
 // Setup form submission
 function setupFormSubmission() {
+    // Listen for company changes to update product autocomplete
+    const companySelect = document.getElementById('poCompany');
+    if (companySelect) {
+        companySelect.addEventListener('change', function() {
+            // Clear the product input when company changes
+            const productInput = document.getElementById('itemProduct');
+            if (productInput) {
+                productInput.value = '';
+                productInput.setAttribute('data-product-id', '');
+                document.getElementById('itemProductSuggestions').classList.remove('active');
+            }
+        });
+    }
+    
     document.getElementById('poForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         
@@ -767,6 +781,63 @@ let allProducts = [];
 // Load products at startup
 loadProducts();
 
+// Setup product autocomplete functionality
+function setupProductAutocomplete(inputId, suggestionsId, companySelectId) {
+    const input = document.getElementById(inputId);
+    const suggestionsContainer = document.getElementById(suggestionsId);
+    const companySelect = document.getElementById(companySelectId);
+    
+    if (!input) return;
+    
+    input.addEventListener('input', function() {
+        const query = this.value.toLowerCase();
+        const selectedCompanyId = companySelect ? companySelect.value : null;
+        
+        if (query.length === 0) {
+            suggestionsContainer.classList.remove('active');
+            return;
+        }
+        
+        // Filter products by company and search term
+        const filteredProducts = window.allProducts.filter(product => {
+            const matchesCompany = !selectedCompanyId || (product.company && product.company.id == selectedCompanyId);
+            const matchesSearch = product.name.toLowerCase().includes(query);
+            return matchesCompany && matchesSearch;
+        });
+        
+        if (filteredProducts.length === 0) {
+            suggestionsContainer.innerHTML = '<div class="autocomplete-item" style="color: #999;">No products found</div>';
+            suggestionsContainer.classList.add('active');
+            return;
+        }
+        
+        suggestionsContainer.innerHTML = filteredProducts.map(product => `
+            <div class="autocomplete-item" onclick="selectProduct('${inputId}', '${suggestionsId}', ${product.id}, '${product.name.replace(/'/g, "\\'")}', '${product.company?.name || 'N/A'}')">
+                <strong>${product.name}</strong> <br>
+                <small style="color: #666;">${product.company?.name || 'N/A'}</small>
+            </div>
+        `).join('');
+        
+        suggestionsContainer.classList.add('active');
+    });
+    
+    input.addEventListener('blur', function() {
+        setTimeout(() => {
+            suggestionsContainer.classList.remove('active');
+        }, 200);
+    });
+}
+
+// Select product from autocomplete dropdown
+function selectProduct(inputId, suggestionsId, productId, productName, companyName) {
+    const input = document.getElementById(inputId);
+    const suggestionsContainer = document.getElementById(suggestionsId);
+    
+    input.value = `${productName} (${companyName})`;
+    input.setAttribute('data-product-id', productId);
+    suggestionsContainer.classList.remove('active');
+}
+
 // Also need to update loadProducts to set global variable
 const originalLoadProducts = loadProducts;
 loadProducts = async function() {
@@ -774,14 +845,8 @@ loadProducts = async function() {
         const response = await fetch('/products');
         allProducts = await response.json();
         
-        const productSelect = document.getElementById('itemProduct');
-        productSelect.innerHTML = '<option value="">Select Product</option>';
-        allProducts.forEach(product => {
-            const option = document.createElement('option');
-            option.value = product.id;
-            option.textContent = `${product.name} (${product.company?.name || 'N/A'})`;
-            productSelect.appendChild(option);
-        });
+        // Setup autocomplete for main form
+        setupProductAutocomplete('itemProduct', 'itemProductSuggestions', 'poCompany');
     } catch (error) {
         console.error('Error loading products:', error);
     }
