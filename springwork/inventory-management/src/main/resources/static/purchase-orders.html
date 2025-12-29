@@ -620,9 +620,10 @@
                     <div class="items-section" id="addItemsSection" style="display:none;">
                         <h3>Add More Items</h3>
                         <div class="add-item-form">
-                            <select id="detailsItemProduct">
-                                <option value="">Select Product</option>
-                            </select>
+                            <div class="autocomplete-container">
+                                <input type="text" id="detailsItemProduct" class="autocomplete-input" placeholder="Search Product..." autocomplete="off">
+                                <div id="detailsItemProductSuggestions" class="autocomplete-suggestions"></div>
+                            </div>
                             <input type="number" id="detailsItemQuantity" placeholder="Quantity" min="1">
                             <input type="number" id="detailsItemUnitPrice" placeholder="Unit Price" min="0" step="0.01">
                             <button type="button" class="btn-primary" onclick="addItemToExistingPO()">Add</button>

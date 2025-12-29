@@ -417,21 +417,19 @@ async function viewPurchaseOrder(id) {
 
 // Load products for details form
 function loadProductsForDetailsForm() {
-    const productSelect = document.getElementById('detailsItemProduct');
-    productSelect.innerHTML = '<option value="">Select Product</option>';
-    (window.allProducts || []).forEach(product => {
-        const option = document.createElement('option');
-        option.value = product.id;
-        option.textContent = `${product.name} (${product.company?.name || 'N/A'})`;
-        productSelect.appendChild(option);
-    });
+    // Setup autocomplete for details form, filtered by current PO's company
+    if (currentViewingPO && currentViewingPO.company) {
+        setupProductAutocompleteForDetails('detailsItemProduct', 'detailsItemProductSuggestions', currentViewingPO.company.id);
+    }
 }
 
 // Add item to existing purchase order
 async function addItemToExistingPO() {
     if (!currentViewingPO) return;
     
-    const productId = document.getElementById('detailsItemProduct').value;
+    const productInput = document.getElementById('detailsItemProduct');
+    const productId = productInput.getAttribute('data-product-id');
+    const productName = productInput.value;
     const quantity = parseInt(document.getElementById('detailsItemQuantity').value);
     const unitPrice = parseFloat(document.getElementById('detailsItemUnitPrice').value);
     
@@ -442,7 +440,7 @@ async function addItemToExistingPO() {
     
     const product = window.allProducts.find(p => p.id == productId);
     if (!product) {
-        showAlert('Product not found', 'error', 'detailsAlert');
+        showAlert('Please select a valid product from the dropdown', 'error', 'detailsAlert');
         return;
     }
     
@@ -462,7 +460,8 @@ async function addItemToExistingPO() {
         
         if (response.ok) {
             showAlert('Item added successfully', 'success', 'detailsAlert');
-            document.getElementById('detailsItemProduct').value = '';
+            productInput.value = '';
+            productInput.setAttribute('data-product-id', '');
             document.getElementById('detailsItemQuantity').value = '';
             document.getElementById('detailsItemUnitPrice').value = '';
             // Refresh the purchase order details
@@ -836,6 +835,51 @@ function selectProduct(inputId, suggestionsId, productId, productName, companyNa
     input.value = `${productName} (${companyName})`;
     input.setAttribute('data-product-id', productId);
     suggestionsContainer.classList.remove('active');
+}
+
+// Setup product autocomplete for details form (filtered by company ID)
+function setupProductAutocompleteForDetails(inputId, suggestionsId, companyId) {
+    const input = document.getElementById(inputId);
+    const suggestionsContainer = document.getElementById(suggestionsId);
+    
+    if (!input) return;
+    
+    input.addEventListener('input', function() {
+        const query = this.value.toLowerCase();
+        
+        if (query.length === 0) {
+            suggestionsContainer.classList.remove('active');
+            return;
+        }
+        
+        // Filter products by the PO's company and search term
+        const filteredProducts = window.allProducts.filter(product => {
+            const matchesCompany = product.company && product.company.id == companyId;
+            const matchesSearch = product.name.toLowerCase().includes(query);
+            return matchesCompany && matchesSearch;
+        });
+        
+        if (filteredProducts.length === 0) {
+            suggestionsContainer.innerHTML = '<div class="autocomplete-item" style="color: #999;">No products found</div>';
+            suggestionsContainer.classList.add('active');
+            return;
+        }
+        
+        suggestionsContainer.innerHTML = filteredProducts.map(product => `
+            <div class="autocomplete-item" onclick="selectProduct('${inputId}', '${suggestionsId}', ${product.id}, '${product.name.replace(/'/g, "\\'")}', '${product.company?.name || 'N/A'}')">
+                <strong>${product.name}</strong> <br>
+                <small style="color: #666;">${product.company?.name || 'N/A'}</small>
+            </div>
+        `).join('');
+        
+        suggestionsContainer.classList.add('active');
+    });
+    
+    input.addEventListener('blur', function() {
+        setTimeout(() => {
+            suggestionsContainer.classList.remove('active');
+        }, 200);
+    });
 }
 
 // Also need to update loadProducts to set global variable
