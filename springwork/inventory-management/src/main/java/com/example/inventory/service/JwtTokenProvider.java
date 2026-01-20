@@ -33,12 +33,12 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-    public String generateToken(Long userId, String username, String role, Long tenantId, String tenantName) {
+    public String generateToken(Long userId, String username, Long role, Long tenantId, String tenantName) {
         SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
         
         Map<String, Object> claims = new HashMap<>();
         claims.put("username", username);
-        claims.put("role", role);
+        claims.put("roleId", role);
         claims.put("tenantId", tenantId);
         claims.put("tenantName", tenantName);
         

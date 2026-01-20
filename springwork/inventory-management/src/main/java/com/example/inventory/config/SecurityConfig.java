@@ -33,6 +33,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/login", "/api/auth/**").permitAll()
                 .requestMatchers("GET", "/screens", "/screen-groups", "/display-types").permitAll()
                 .requestMatchers("GET", "/api/screens", "/api/screen-groups", "/api/display-types").permitAll()
+                .requestMatchers("GET", "/api/dashboard/**").permitAll()
                 // Allow access to all static HTML pages
                 .requestMatchers("/*.html").permitAll()
                 // Protect API endpoints that modify data

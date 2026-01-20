@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POS Dashboard | Inventory Pro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- 
+    	<link rel="stylesheet" href="/static/css/pos-dashboard.css">
+    -->
+    <style>
+        body { background: #f4f6fa; }
+        .dashboard-header { background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.08); padding: 1.2rem 2rem; display: flex; align-items: center; justify-content: space-between; }
+        .dashboard-header .brand { font-size: 2rem; font-weight: 700; color: #4f46e5; }
+        .dashboard-header .user-info { display: flex; align-items: center; gap: 1.2rem; }
+        .dashboard-header .user-avatar { width: 40px; height: 40px; border-radius: 50%; background: #e0e7ff; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; font-weight: 700; color: #4f46e5; }
+        .dashboard-header .company-select, .dashboard-header .display-type-select { min-width: 140px; }
+        .sidebar { background: #fff; min-height: 100vh; box-shadow: 2px 0 8px rgba(0,0,0,0.04); padding: 2rem 1rem 2rem 1.5rem; }
+        .sidebar .menu-group-title { font-size: 1.1rem; font-weight: 600; color: #6366f1; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+        .sidebar .menu-item { display: flex; align-items: center; gap: 0.8rem; padding: 0.7rem 1rem; border-radius: 8px; color: #333; text-decoration: none; font-weight: 500; transition: background 0.2s; }
+        .sidebar .menu-item.active, .sidebar .menu-item:hover { background: #e0e7ff; color: #4f46e5; }
+        .sidebar .menu-item-icon { font-size: 1.3rem; }
+        .main-content { padding: 2.5rem 2rem; }
+        .quick-links { display: flex; flex-wrap: wrap; gap: 1.5rem; margin-bottom: 2.5rem; }
+        .quick-link-btn { background: #fff; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); padding: 1.2rem 1.5rem; display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #333; font-weight: 500; min-width: 120px; transition: box-shadow 0.2s, background 0.2s; }
+        .quick-link-btn:hover { background: #e0e7ff; color: #4f46e5; box-shadow: 0 4px 16px rgba(99,102,241,0.08); }
+        .quick-link-icon { font-size: 2.2rem; margin-bottom: 0.5rem; }
+        .stat-cards { display: flex; gap: 2rem; margin-bottom: 2.5rem; flex-wrap: wrap; }
+        .stat-card { background: #fff; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); padding: 1.5rem 2rem; flex: 1 1 180px; display: flex; flex-direction: column; align-items: flex-start; }
+        .stat-card .stat-label { color: #6366f1; font-size: 1rem; font-weight: 600; margin-bottom: 0.3rem; }
+        .stat-card .stat-value { font-size: 2rem; font-weight: 700; color: #22223b; }
+        @media (max-width: 991px) {
+            .sidebar { min-height: auto; padding: 1rem; }
+            .main-content { padding: 1.2rem 0.5rem; }
+            .stat-cards { gap: 1rem; }
+        }
+        @media (max-width: 767px) {
+            .dashboard-header { flex-direction: column; align-items: flex-start; gap: 1rem; padding: 1rem; }
+            .sidebar { display: none; }
+            .main-content { padding: 1rem 0.2rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-header">
+        <div class="brand"><i class="bi bi-cash-register"></i> POS Dashboard</div>
+        <div class="d-flex align-items-center gap-3">
+            <select id="companySelect" class="form-select company-select"></select>
+            <select id="displayTypeSelect" class="form-select display-type-select">
+                <option value="D">Display D</option>
+                <option value="HD">Display HD</option>
+            </select>
+        </div>
+        <div class="user-info">
+            <span id="userName" class="fw-bold"></span>
+            <span id="userRole" class="text-muted small"></span>
+            <span id="userAvatar" class="user-avatar">U</span>
+            <button id="logoutBtn" class="btn btn-outline-secondary btn-sm ms-2"><i class="bi bi-box-arrow-right"></i> Logout</button>
+        </div>
+    </div>
+    <div class="container-fluid">
+        <div class="row">
+            <nav class="col-lg-2 col-md-3 sidebar" id="sidebarMenu">
+                <div id="menuContainer"></div>
+            </nav>
+            <main class="col-lg-10 col-md-9 main-content" id="dashboardContainer">
+                <div class="stat-cards mb-4">
+                    <div class="stat-card">
+                        <div class="stat-label">Products</div>
+                        <div class="stat-value" id="productCount">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Inventory</div>
+                        <div class="stat-value" id="inventoryCount">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Purchase Orders</div>
+                        <div class="stat-value" id="poCount">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Users</div>
+                        <div class="stat-value" id="userCount">0</div>
+                    </div>
+                </div>
+                <div class="quick-links mb-4" id="quickLinksGrid"></div>
+                <div class="welcome-message mb-4" id="welcomeMessage"></div>
+                <div id="dashboardContent"></div>
+            </main>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- 
+    	<script src="/static/js/pos-dashboard.js"></script>
+     -->
+    <script>
+        // Load header menu from screens with display type D or HD and user company role
+        async function loadHeaderMenu() {
+            try {
+                // Extract roleId from JWT (client side)
+                let roleId = null;
+                const token = localStorage.getItem('jwtToken') || (JSON.parse(localStorage.getItem('loginResponse')||'{}').token || '');
+               alert(token);
+                if (token) {
+                    try {
+                        const payload = JSON.parse(atob(token.split('.')[1]));
+                        alert(payload.roleId);
+                        if (!payload.roleId) alert(payload.roleId);
+                        if (payload.roleId) roleId = payload.roleId;
+                        
+                        
+                    
+                    } catch {
+                    	alert('paload roleid catch');
+                    }
+                }
+                let url = '/api/dashboard/load';
+                if (roleId) {
+                    url += `?roleId=${encodeURIComponent(roleId)}`;
+                }
+                let dashboardData = null;
+                let screens = [];
+                let userRoleId = roleId;
+                alert(url);
+                let res = await fetch(url);
+                
+                if (res.ok) {
+                	
+                    const result = await res.json();
+                    alert(result.success);
+                    if (result.success && result.data) {
+                        dashboardData = result.data;
+                        // Try to get roleScreens from dashboardData
+                        if (dashboardData.roleScreens && Array.isArray(dashboardData.roleScreens)) {
+                            screens = dashboardData.roleScreens;
+                        } else if (dashboardData.screens && Array.isArray(dashboardData.screens)) {
+                            screens = dashboardData.screens;
+                        }
+                    }
+                }
+                if (!screens.length) {
+                    // fallback to /api/dashboard/screens (legacy)
+                    let fallbackRes = await fetch('/api/dashboard/screens');
+                    if (fallbackRes.ok) {
+                        const fallbackResult = await fallbackRes.json();
+                        if (fallbackResult.success && Array.isArray(fallbackResult.data)) {
+                            screens = fallbackResult.data;
+                        }
+                    }
+                }
+                if (!screens.length) {
+                    // fallback to /screens (public, if available)
+                    let fallbackRes = await fetch('/screens');
+                    screens = await fallbackRes.json();
+                }
+
+                // Filter screens with display type D or HD
+                let headerScreens = screens.filter(s =>
+                    s.displayType && (s.displayType.name === 'D' || s.displayType.name === 'HD' || s.displayType === 'D' || s.displayType === 'HD')
+                );
+
+                // If roleId is available and screens have roles, filter by user role
+                if (userRoleId) {
+                    headerScreens = headerScreens.filter(s => {
+                        if (!s.roles) return true;
+                        if (Array.isArray(s.roles)) {
+                            return s.roles.includes(userRoleId) || s.roles.some(r => r.id === userRoleId);
+                        }
+                        return true;
+                    });
+                }
+
+                // Render menu in header
+                let navMenu = document.getElementById('headerMenu');
+                if (!navMenu) {
+                    // Create header if not present
+                    const header = document.createElement('header');
+                    header.innerHTML = `
+                        <nav class="navbar navbar-expand-lg navbar-light">
+                            <div class="container-fluid px-4">
+                                <a class="navbar-brand" href="pos-dashboard.html">
+                                    <i class="bi bi-cash-register"></i> POS Dashboard
+                                </a>
+                                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMenu">
+                                    <span class="navbar-toggler-icon"></span>
+                                </button>
+                                <div class="collapse navbar-collapse" id="navbarMenu">
+                                    <ul class="navbar-nav ms-auto" id="headerMenu"></ul>
+                                </div>
+                            </div>
+                        </nav>
+                    `;
+                    document.body.insertBefore(header, document.body.firstChild);
+                    navMenu = document.getElementById('headerMenu');
+                }
+                navMenu.innerHTML = '';
+
+                // Group screens by group (group.id or 'nogroup')
+                const groups = new Map();
+                headerScreens.forEach(s => {
+                    const grp = s.group ? `${s.group.id}::${s.group.name}` : 'nogroup::';
+                    if (!groups.has(grp)) groups.set(grp, []);
+                    groups.get(grp).push(s);
+                });
+
+                // Render groups: grouped menus become dropdowns; 'nogroup' items are top-level links
+                for (const [grpKey, items] of groups) {
+                    if (grpKey === 'nogroup::') {
+                        // render each ungrouped screen as top-level link
+                        items.forEach(screen => {
+                            const li = document.createElement('li');
+                            li.className = 'nav-item';
+                            const link = document.createElement('a');
+                            link.className = 'nav-link';
+                            link.href = screen.path || '#';
+                            link.textContent = screen.name;
+                            li.appendChild(link);
+                            navMenu.appendChild(li);
+                        });
+                        continue;
+                    }
+
+                    // groupKey is "id::name"
+                    const [gid, gname] = grpKey.split('::');
+                    const li = document.createElement('li');
+                    li.className = 'nav-item dropdown';
+
+                    const toggleId = `menuGroup${gid}`;
+                    const anchor = document.createElement('a');
+                    anchor.className = 'nav-link dropdown-toggle';
+                    anchor.href = '#';
+                    anchor.id = toggleId;
+                    anchor.setAttribute('role', 'button');
+                    anchor.setAttribute('data-bs-toggle', 'dropdown');
+                    anchor.setAttribute('aria-expanded', 'false');
+                    anchor.textContent = gname;
+
+                    const ul = document.createElement('ul');
+                    ul.className = 'dropdown-menu';
+                    ul.setAttribute('aria-labelledby', toggleId);
+
+                    items.forEach(screen => {
+                        const itemLi = document.createElement('li');
+                        const a = document.createElement('a');
+                        a.className = 'dropdown-item';
+                        a.href = screen.path || '#';
+                        a.textContent = screen.name;
+                        itemLi.appendChild(a);
+                        ul.appendChild(itemLi);
+                    });
+
+                    li.appendChild(anchor);
+                    li.appendChild(ul);
+                    navMenu.appendChild(li);
+                }
+
+                // Add login link at the end
+                const loginLi = document.createElement('li');
+                loginLi.className = 'nav-item';
+                loginLi.innerHTML = `<a class="nav-link" href="login.html"><i class="bi bi-box-arrow-in-right"></i> Login</a>`;
+                navMenu.appendChild(loginLi);
+
+            } catch (error) {
+                console.error('Error loading header menu:', error);
+            }
+        }
+        // Load menu on page load
+        window.addEventListener('DOMContentLoaded', loadHeaderMenu);
+    </script>
+</body>
+</html>

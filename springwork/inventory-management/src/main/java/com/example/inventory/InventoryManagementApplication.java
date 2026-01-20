@@ -8,4 +8,5 @@ public class InventoryManagementApplication {
     public static void main(String[] args) {
         SpringApplication.run(InventoryManagementApplication.class, args);
     }
+    // Ensure DashboardService and DashboardController are picked up by component scan (if not already)
 }

@@ -1,6 +1,9 @@
 package com.example.inventory.config;
 
 import com.example.inventory.service.JwtTokenProvider;
+
+import io.jsonwebtoken.ExpiredJwtException;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -54,6 +57,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             } else {
                 System.out.println("[JWT Filter] No Bearer token found in Authorization header");
             }
+        } catch(ExpiredJwtException ex) { 
+        	// Token expired → redirect to login
+            SecurityContextHolder.clearContext();
+            response.sendRedirect("/login");
         } catch (Exception e) {
             logger.error("Cannot set user authentication", e);
             System.out.println("[JWT Filter] Exception: " + e.getMessage());

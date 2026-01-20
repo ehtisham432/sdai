@@ -64,7 +64,7 @@ public class AuthController {
             }*/
 
             // Generate JWT token with role and tenant info
-            String role = "USER";
+            Long roleId = null;
             Long tenantId = null;
             String tenantName = null;
             
@@ -73,7 +73,7 @@ public class AuthController {
             if (!userRoles.isEmpty()) {
                 UserCompanyRole firstRole = userRoles.get(0);
                 if (firstRole.getRole() != null) {
-                    role = firstRole.getRole().getName();
+                    roleId = firstRole.getRole().getId();
                 }
                 if (firstRole.getCompany() != null) {
                     tenantId = firstRole.getCompany().getId();
@@ -81,7 +81,7 @@ public class AuthController {
                 }
             }
             
-            String token = jwtTokenProvider.generateToken(user.getId(), user.getUsername(), role, tenantId, tenantName);
+            String token = jwtTokenProvider.generateToken(user.getId(), user.getUsername(), roleId, tenantId, tenantName);
 
             // Create user info for response
             LoginResponse.UserInfo userInfo = new LoginResponse.UserInfo(
