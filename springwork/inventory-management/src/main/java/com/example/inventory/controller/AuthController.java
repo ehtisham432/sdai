@@ -1,19 +1,31 @@
 package com.example.inventory.controller;
 
-import com.example.inventory.User;
-import com.example.inventory.UserCompanyRole;
-import com.example.inventory.dto.LoginRequest;
-import com.example.inventory.dto.LoginResponse;
-import com.example.inventory.repository.UserRepository;
-import com.example.inventory.repository.UserCompanyRoleRepository;
-import com.example.inventory.service.JwtTokenProvider;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
+import com.example.inventory.Role;
+import com.example.inventory.User;
+import com.example.inventory.UserCompanyRole;
+import com.example.inventory.dto.LoginRequest;
+import com.example.inventory.dto.LoginResponse;
+import com.example.inventory.repository.UserCompanyRoleRepository;
+import com.example.inventory.repository.UserRepository;
+import com.example.inventory.service.JwtTokenProvider;
+
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 
 @RestController
 @RequestMapping("/api")
@@ -32,7 +44,7 @@ public class AuthController {
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest,HttpServletResponse response) {
         try {
             // Validate input
             if (loginRequest.getUsername() == null || loginRequest.getUsername().isEmpty() ||
@@ -64,7 +76,7 @@ public class AuthController {
             }*/
 
             // Generate JWT token with role and tenant info
-            Long roleId = null;
+            List<Role> roles = null;
             Long tenantId = null;
             String tenantName = null;
             
@@ -73,7 +85,8 @@ public class AuthController {
             if (!userRoles.isEmpty()) {
                 UserCompanyRole firstRole = userRoles.get(0);
                 if (firstRole.getRole() != null) {
-                    roleId = firstRole.getRole().getId();
+                	roles = new ArrayList();
+                    roles.add(firstRole.getRole());// = firstRole.getRole();//.getId();
                 }
                 if (firstRole.getCompany() != null) {
                     tenantId = firstRole.getCompany().getId();
@@ -81,7 +94,7 @@ public class AuthController {
                 }
             }
             
-            String token = jwtTokenProvider.generateToken(user.getId(), user.getUsername(), roleId, tenantId, tenantName);
+            String token = jwtTokenProvider.generateToken(user.getId(), user.getUsername(), roles, tenantId, tenantName);
 
             // Create user info for response
             LoginResponse.UserInfo userInfo = new LoginResponse.UserInfo(
@@ -89,6 +102,13 @@ public class AuthController {
                     user.getUsername(),
                     user.getEmail()
             );
+            Cookie cookie = new Cookie("jwt", token);
+            cookie.setHttpOnly(true);
+            cookie.setSecure(false);   // <-- this line
+            cookie.setPath("/");
+            cookie.setMaxAge(24 * 60 * 60);
+            response.addCookie(cookie);
+
 
             return ResponseEntity.ok(new LoginResponse(true, "Login successful", token, userInfo));
 

@@ -29,14 +29,14 @@ public class SecurityConfig {
         http
             .csrf().disable()
             .authorizeHttpRequests(authz -> authz
-                .requestMatchers("/", "/index.html", "/login.html", "/static/**").permitAll()
-                .requestMatchers("/api/login", "/api/auth/**").permitAll()
+               // .requestMatchers("/", "/index.html", "/login.html", "/static/**").permitAll()
+                .requestMatchers("GET", "/api/**").permitAll()
                 .requestMatchers("GET", "/screens", "/screen-groups", "/display-types").permitAll()
-                .requestMatchers("GET", "/api/screens", "/api/screen-groups", "/api/display-types").permitAll()
-                .requestMatchers("GET", "/api/dashboard/**").permitAll()
                 // Allow access to all static HTML pages
-                .requestMatchers("/*.html").permitAll()
-                // Protect API endpoints that modify data
+                .requestMatchers("/login.html","/index.html").permitAll()
+                // Protect Html
+                .requestMatchers("/pro/**").authenticated()
+            	// Protect API endpoints that modify data
                 .requestMatchers("POST", "/api/**").authenticated()
                 .requestMatchers("PUT", "/api/**").authenticated()
                 .requestMatchers("DELETE", "/api/**").authenticated()

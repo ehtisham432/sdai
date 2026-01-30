@@ -1,12 +1,13 @@
 // Auth utility - check token and redirect if not authenticated
 (function() {
+	alert('inside auth.js');
     // Get token from localStorage (use same key as login.html stores it)
     const token = localStorage.getItem('jwtToken');
     const currentPage = window.location.pathname;
     
     // Pages that require authentication
     const protectedPages = [
-        '/product.html',
+        '/pro/product.html',
         '/company.html',
         '/user.html',
         '/roles.html',
@@ -22,7 +23,7 @@
     
     // Check if current page is protected
     const isProtected = protectedPages.some(page => currentPage.includes(page));
-    
+    alert(token);
     if (isProtected && !token) {
         // Redirect to login if token is missing
         window.location.href = '/login.html';

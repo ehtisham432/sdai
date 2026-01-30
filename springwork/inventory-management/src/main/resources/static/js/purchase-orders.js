@@ -8,6 +8,7 @@ let receiveItems = [];
 
 // Initialize the page
 document.addEventListener('DOMContentLoaded', function() {
+	alert('inside po js');
     loadCompanies();
     loadProducts();
     setupFormSubmission();
@@ -65,7 +66,7 @@ async function loadCompanies() {
 // Load products for dropdown
 async function loadProducts() {
     try {
-        const response = await fetch('/products');
+        const response = await fetch('/api/products');
         const products = await response.json();
         
         window.allProducts = products;
@@ -886,7 +887,7 @@ function setupProductAutocompleteForDetails(inputId, suggestionsId, companyId) {
 const originalLoadProducts = loadProducts;
 loadProducts = async function() {
     try {
-        const response = await fetch('/products');
+        const response = await fetch('/api/products');
         allProducts = await response.json();
         
         // Setup autocomplete for main form

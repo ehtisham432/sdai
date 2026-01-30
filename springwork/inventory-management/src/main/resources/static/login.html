@@ -374,11 +374,11 @@
                 });
 
                 const data = await response.json();
-
+				alert('success '+data.success);
                 if (response.ok && data.success) {
                     successMessage.textContent = 'Login successful! Redirecting...';
                     successMessage.style.display = 'block';
-                    
+                    alert('alert'+data.token);
                     // Store JWT token in localStorage
                     if (data.token) {
                         localStorage.setItem('jwtToken', data.token);

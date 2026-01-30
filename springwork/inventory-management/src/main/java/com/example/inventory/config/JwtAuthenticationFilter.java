@@ -1,9 +1,6 @@
 package com.example.inventory.config;
 
 import com.example.inventory.service.JwtTokenProvider;
-
-import io.jsonwebtoken.ExpiredJwtException;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -12,6 +9,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -29,6 +27,28 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             String authHeader = request.getHeader("Authorization");
             String requestPath = request.getRequestURI();
+            
+            String jwtl = null;
+            if (request.getCookies() != null) {
+                for (Cookie cookie : request.getCookies()) {
+                    if ("jwt".equals(cookie.getName())) {
+                        jwtl = cookie.getValue();
+                    }
+                }
+            }
+
+            if (jwtl != null) {
+                String username = jwtTokenProvider.getClaimFromToken(jwtl, "username");//.extractUsername(jwt);
+                if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                    if (jwtTokenProvider.validateToken(jwtl)) {
+                        UsernamePasswordAuthenticationToken authToken =
+                            new UsernamePasswordAuthenticationToken(
+                                username, null, jwtTokenProvider.getAuthorities(jwtl));//jwtService.getAuthorities(jwt)
+                        SecurityContextHolder.getContext().setAuthentication(authToken);
+                    }
+                }
+            }
+
             
             // Log for debugging
             System.out.println("[JWT Filter] Request: " + request.getMethod() + " " + requestPath);
@@ -57,10 +77,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             } else {
                 System.out.println("[JWT Filter] No Bearer token found in Authorization header");
             }
-        } catch(ExpiredJwtException ex) { 
-        	// Token expired → redirect to login
-            SecurityContextHolder.clearContext();
-            response.sendRedirect("/login");
         } catch (Exception e) {
             logger.error("Cannot set user authentication", e);
             System.out.println("[JWT Filter] Exception: " + e.getMessage());
