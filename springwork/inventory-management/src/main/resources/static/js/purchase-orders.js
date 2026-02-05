@@ -8,7 +8,7 @@ let receiveItems = [];
 
 // Initialize the page
 document.addEventListener('DOMContentLoaded', function() {
-	alert('inside po js');
+	//alert('inside po js');
     loadCompanies();
     loadProducts();
     setupFormSubmission();
