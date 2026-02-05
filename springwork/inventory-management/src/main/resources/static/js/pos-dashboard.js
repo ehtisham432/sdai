@@ -10,9 +10,9 @@ let currentDisplayType = 'D';
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         const isAuthenticated = await checkAuthentication();
-        alert(isAuthenticated);
+        //alert(isAuthenticated);
         if (!isAuthenticated) {
-			alert('authentication failed');
+			//alert('authentication failed');
             window.location.href = '/login.html';
             return;
         }
@@ -255,13 +255,14 @@ async function checkAuthentication() {
 }
 
 function getAuthToken() {
-    let loginResponse = localStorage.getItem('loginResponse');
+    /**let loginResponse = localStorage.getItem('loginResponse');
     if (loginResponse) {
         try {
+			alert('login response: '+loginResponse);
             const parsed = JSON.parse(loginResponse);
             return parsed.token || null;
         } catch {}
-    }
+    }**/
     return localStorage.getItem('jwtToken') || null;
 }
 
