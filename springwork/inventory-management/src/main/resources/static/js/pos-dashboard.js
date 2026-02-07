@@ -167,11 +167,19 @@ async function loadHeaderMenu() {
             navMenu.appendChild(li);
         }
 
-        // Add login link at the end
-        const loginLi = document.createElement('li');
-        loginLi.className = 'nav-item';
-        loginLi.innerHTML = `<a class="nav-link" href="login.html"><i class="bi bi-box-arrow-in-right"></i> Login</a>`;
-        navMenu.appendChild(loginLi);
+        // Add logout link at the end
+        const logoutLi = document.createElement('li');
+        logoutLi.className = 'nav-item';
+        logoutLi.innerHTML = `<a class="nav-link" href="#" id="headerLogout"><i class="bi bi-box-arrow-right"></i> Logout</a>`;
+        navMenu.appendChild(logoutLi);
+        // Attach logout event
+        const headerLogout = document.getElementById('headerLogout');
+        if (headerLogout) {
+            headerLogout.addEventListener('click', function(e) {
+                e.preventDefault();
+                logout();
+            });
+        }
 
     } catch (error) {
         console.error('Error loading header menu:', error);
@@ -440,7 +448,7 @@ function getAuthToken() {
 function logout() {
     localStorage.removeItem('loginResponse');
     localStorage.removeItem('jwtToken');
-    window.location.href = '/login.html';
+    window.location.href = '/index.html';
 }
 
 function showErrorMessage(message) {
