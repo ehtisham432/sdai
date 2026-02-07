@@ -17,6 +17,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
         await loadDashboard();
+        await loadHeaderMenu();
+        updateBreadcrumb();
         setupEventListeners();
         await loadUserCompanies();
     } catch (error) {
@@ -24,6 +26,175 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
+// Load header menu from screens with display type D or HD and user company role
+async function loadHeaderMenu() {
+    try {
+        // Extract roleId from JWT (client side)
+        let roleId = null;
+        const token = localStorage.getItem('jwtToken') || (JSON.parse(localStorage.getItem('loginResponse')||'{}').token || '');
+      // alert(token);
+        if (token) {
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                //alert(payload.roleId);
+                if (!payload.roleId) alert(payload.roleId);
+                if (payload.roleId) roleId = payload.roleId;
+                
+                
+            
+            } catch {
+            	alert('paload roleid catch');
+            }
+        }
+        let url = '/api/dashboard/load';
+        if (roleId) {
+            url += `?roleId=${encodeURIComponent(roleId)}`;
+        }
+        let dashboardData = null;
+        let screens = [];
+        let userRoleId = roleId;
+       // alert(url);
+        let res = await fetch(url);
+        
+        if (res.ok) {
+        	
+            const result = await res.json();
+            //alert(result.success);
+            if (result.success && result.data) {
+                dashboardData = result.data;
+                // Try to get roleScreens from dashboardData
+                if (dashboardData.roleScreens && Array.isArray(dashboardData.roleScreens)) {
+                    screens = dashboardData.roleScreens;
+                } else if (dashboardData.screens && Array.isArray(dashboardData.screens)) {
+                    screens = dashboardData.screens;
+                }
+            }
+        }
+        if (!screens.length) {
+            // fallback to /api/dashboard/screens (legacy)
+            let fallbackRes = await fetch('/api/dashboard/screens');
+            if (fallbackRes.ok) {
+                const fallbackResult = await fallbackRes.json();
+                if (fallbackResult.success && Array.isArray(fallbackResult.data)) {
+                    screens = fallbackResult.data;
+                }
+            }
+        }
+        if (!screens.length) {
+            // fallback to /screens (public, if available)
+            let fallbackRes = await fetch('/screens');
+            screens = await fallbackRes.json();
+        }
+
+        // Filter screens with display type D or HD
+        let headerScreens = screens.filter(s =>
+            s.displayType && (s.displayType.name === 'D' || s.displayType.name === 'HD' || s.displayType === 'D' || s.displayType === 'HD')
+        );
+
+        // If roleId is available and screens have roles, filter by user role
+        if (userRoleId) {
+            headerScreens = headerScreens.filter(s => {
+                if (!s.roles) return true;
+                if (Array.isArray(s.roles)) {
+                    return s.roles.includes(userRoleId) || s.roles.some(r => r.id === userRoleId);
+                }
+                return true;
+            });
+        }
+
+        // Render menu in header
+        let navMenu = document.getElementById('headerMenu');
+        if (navMenu) {
+            navMenu.innerHTML = '';
+        }
+
+        // Group screens by group (group.id or 'nogroup')
+        const groups = new Map();
+        headerScreens.forEach(s => {
+            const grp = s.group ? `${s.group.id}::${s.group.name}` : 'nogroup::';
+            if (!groups.has(grp)) groups.set(grp, []);
+            groups.get(grp).push(s);
+        });
+
+        // Render groups: grouped menus become dropdowns; 'nogroup' items are top-level links
+        for (const [grpKey, items] of groups) {
+            if (grpKey === 'nogroup::') {
+                // render each ungrouped screen as top-level link
+                items.forEach(screen => {
+                    const li = document.createElement('li');
+                    li.className = 'nav-item';
+                    const link = document.createElement('a');
+                    link.className = 'nav-link';
+                    link.href = screen.path || '#';
+                    link.textContent = screen.name;
+                    li.appendChild(link);
+                    navMenu.appendChild(li);
+                });
+                continue;
+            }
+
+            // groupKey is "id::name"
+            const [gid, gname] = grpKey.split('::');
+            const li = document.createElement('li');
+            li.className = 'nav-item dropdown';
+
+            const toggleId = `menuGroup${gid}`;
+            const anchor = document.createElement('a');
+            anchor.className = 'nav-link dropdown-toggle';
+            anchor.href = '#';
+            anchor.id = toggleId;
+            anchor.setAttribute('role', 'button');
+            anchor.setAttribute('data-bs-toggle', 'dropdown');
+            anchor.setAttribute('aria-expanded', 'false');
+            anchor.textContent = gname;
+
+            const ul = document.createElement('ul');
+            ul.className = 'dropdown-menu';
+            ul.setAttribute('aria-labelledby', toggleId);
+
+            items.forEach(screen => {
+                const itemLi = document.createElement('li');
+                const a = document.createElement('a');
+                a.className = 'dropdown-item';
+                a.href = screen.path || '#';
+                a.textContent = screen.name;
+                itemLi.appendChild(a);
+                ul.appendChild(itemLi);
+            });
+
+            li.appendChild(anchor);
+            li.appendChild(ul);
+            navMenu.appendChild(li);
+        }
+
+        // Add login link at the end
+        const loginLi = document.createElement('li');
+        loginLi.className = 'nav-item';
+        loginLi.innerHTML = `<a class="nav-link" href="login.html"><i class="bi bi-box-arrow-in-right"></i> Login</a>`;
+        navMenu.appendChild(loginLi);
+
+    } catch (error) {
+        console.error('Error loading header menu:', error);
+    }
+}
+// Update breadcrumb based on current path
+function updateBreadcrumb() {
+    const breadcrumbCurrent = document.getElementById('breadcrumbCurrent');
+    
+    if (!breadcrumbCurrent) return;
+    
+    // Try to use the active menu item as breadcrumb
+    const activeMenu = document.querySelector('#headerMenu .nav-link.active, #headerMenu .dropdown-item.active');
+   
+    if (activeMenu) {
+    	
+        breadcrumbCurrent.textContent = activeMenu.textContent;
+    } else {
+        // fallback to page title
+        breadcrumbCurrent.textContent = document.title.replace(' | Inventory Pro', '');
+        
+    }
+}
 function setupEventListeners() {
     const companySelect = document.getElementById('companySelect');
     if (companySelect) {
@@ -99,7 +270,7 @@ function updateDashboardUI(dashboard) {
         document.getElementById('welcomeMessage').textContent = `Welcome, ${user.username}! You're logged in as ${user.roleName}.`;
     }
     if (company) {
-        document.getElementById('companyName')?.textContent = company.name;
+        document.getElementById('companyName').textContent = company.name;
         currentCompanyId = company.id;
         updateCompanySelector(company.id);
     }
