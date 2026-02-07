@@ -153,4 +153,23 @@ public class AuthController {
                     }});
         }
     }
+    
+    @PostMapping("/auth/logout")
+    public ResponseEntity<?> logout(HttpServletResponse response) {
+        // Remove JWT cookie (if used)
+        Cookie cookie = new Cookie("jwt", null);
+        cookie.setHttpOnly(true);
+        cookie.setSecure(false);
+        cookie.setPath("/");
+        cookie.setMaxAge(0); // Expire immediately
+        response.addCookie(cookie);
+
+        // Optionally: invalidate session if using session-based auth
+        // request.getSession().invalidate();
+
+        return ResponseEntity.ok().body(new java.util.HashMap<String, Object>() {{
+            put("success", true);
+            put("message", "Logged out successfully");
+        }});
+    }
 }

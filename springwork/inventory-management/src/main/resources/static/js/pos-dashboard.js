@@ -450,7 +450,24 @@ function logout() {
     localStorage.removeItem('jwtToken');
     window.location.href = '/index.html';
 }
-
+    async function logout() {
+        try {
+            const token = getAuthToken();
+            // Call Spring Boot logout endpoint
+            await fetch('/api/auth/logout', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+        } catch (e) {
+            // ignore
+        }
+        localStorage.removeItem('loginResponse');
+        localStorage.removeItem('jwtToken');
+        window.location.href = '/index.html';
+}
 function showErrorMessage(message) {
     const errorDiv = document.createElement('div');
     errorDiv.className = 'error-container';
