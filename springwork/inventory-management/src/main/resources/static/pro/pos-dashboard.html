@@ -11,11 +11,25 @@
     
     <style>
         body { background: #f4f6fa; }
-        .dashboard-header { background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.08); padding: 1.2rem 2rem; display: flex; align-items: center; justify-content: space-between; }
-        .dashboard-header .brand { font-size: 2rem; font-weight: 700; color: #4f46e5; }
+        .dashboard-header {
+            background: #ffffff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            padding: 0;
+        }
+        .dashboard-header .navbar { padding: 1rem 0; }
+        .dashboard-header .brand, .dashboard-header .navbar-brand {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #000 !important;
+        }
         .dashboard-header .user-info { display: flex; align-items: center; gap: 1.2rem; }
         .dashboard-header .user-avatar { width: 40px; height: 40px; border-radius: 50%; background: #e0e7ff; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; font-weight: 700; color: #4f46e5; }
         .dashboard-header .company-select, .dashboard-header .display-type-select { min-width: 140px; }
+        .dashboard-header .navbar-nav .nav-link { color: #666 !important; font-weight: 500; margin: 0 1rem; transition: color 0.3s; }
+        .dashboard-header .navbar-nav .nav-link:hover { color: #000 !important; }
         .sidebar { background: #fff; min-height: 100vh; box-shadow: 2px 0 8px rgba(0,0,0,0.04); padding: 2rem 1rem 2rem 1.5rem; }
         .sidebar .menu-group-title { font-size: 1.1rem; font-weight: 600; color: #6366f1; margin-top: 1.5rem; margin-bottom: 0.5rem; }
         .sidebar .menu-item { display: flex; align-items: center; gap: 0.8rem; padding: 0.7rem 1rem; border-radius: 8px; color: #333; text-decoration: none; font-weight: 500; transition: background 0.2s; }
@@ -44,23 +58,24 @@
 </head>
 <body>
     <div class="dashboard-header">
-        <div class="brand"><i class="bi bi-cash-register"></i> POS Dashboard</div>
-        <nav class="navbar navbar-expand-lg navbar-light px-0" style="flex:1;">
-            <div class="container-fluid px-0 d-flex align-items-center">
-                <div class="flex-grow-1"></div>
-                <button class="navbar-toggler ms-auto" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMenu" aria-controls="navbarMenu" aria-expanded="false" aria-label="Toggle navigation">
+        <nav class="navbar navbar-expand-lg navbar-light">
+            <div class="container-fluid px-4">
+                <a class="navbar-brand" href="/pro/pos-dashboard.html">
+                    <i class="bi bi-cash-register"></i> POS Dashboard
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMenu" aria-controls="navbarMenu" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="collapse navbar-collapse" id="navbarMenu">
                     <ul class="navbar-nav ms-auto" id="headerMenu"></ul>
+                    <div class="user-info ms-3">
+                        <span id="userName" class="fw-bold"></span>
+                        <span id="userRole" class="text-muted small"></span>
+                        <span id="userAvatar" class="user-avatar">U</span>
+                    </div>
                 </div>
             </div>
         </nav>
-        <div class="user-info">
-            <span id="userName" class="fw-bold"></span>
-            <span id="userRole" class="text-muted small"></span>
-            <span id="userAvatar" class="user-avatar">U</span>
-        </div>
     </div>
     <!-- Breadcrumb for small screens -->
     <nav aria-label="breadcrumb" class="d-lg-none d-block px-3 pt-2">
