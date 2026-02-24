@@ -35,26 +35,34 @@ async function loadCompanies() {
         
         const companySelects = document.querySelectorAll('#poCompany, #companyFilter');
         companySelects.forEach(select => {
-            const currentValue = select.value;
-            select.innerHTML = select.id === 'companyFilter' 
-                ? '<option value="">All Companies</option>' 
-                : '<option value="">Select a company</option>';
-            
-            companies.forEach(company => {
-                const option = document.createElement('option');
-                option.value = company.id;
-                option.textContent = company.name;
-                select.appendChild(option);
-            });
-            
-            // Set default selection for create form using JWT claim, but not for filter
-            if (select.id === 'poCompany' && userCompanyId) {
-                // Convert to string for comparison since select.value is always string
-                const companyIdStr = String(userCompanyId);
-                select.value = companyIdStr;
-                console.log(`Set company dropdown to: ${companyIdStr}, current value: ${select.value}`);
-            } else if (currentValue && select.id === 'poCompany') {
-                select.value = currentValue;
+            // Remove all options
+            while (select.firstChild) select.removeChild(select.firstChild);
+            // For filter, do not add 'All Companies' option, make it mandatory
+            if (select.id === 'companyFilter') {
+                companies.forEach(company => {
+                    const option = document.createElement('option');
+                    option.value = company.id;
+                    option.textContent = company.name;
+                    if (userCompanyId && company.id == userCompanyId) {
+                        option.selected = true;
+                    }
+                    select.appendChild(option);
+                });
+            } else {
+                // For form, add a blank option
+                const blank = document.createElement('option');
+                blank.value = '';
+                blank.textContent = '-- Select Company --';
+                select.appendChild(blank);
+                companies.forEach(company => {
+                    const option = document.createElement('option');
+                    option.value = company.id;
+                    option.textContent = company.name;
+                    if (userCompanyId && company.id == userCompanyId) {
+                        option.selected = true;
+                    }
+                    select.appendChild(option);
+                });
             }
         });
     } catch (error) {
@@ -84,16 +92,18 @@ async function performSearch() {
         const companyId = document.getElementById('companyFilter').value;
         const status = document.getElementById('statusFilter').value;
         
+        // Company filter is mandatory
+        if (!companyId) {
+            showAlert('Please select a company to search.', 'error');
+            document.getElementById('companyFilter').focus();
+            return;
+        }
         let url = '/purchase-orders';
         const params = [];
-        
-        if (companyId) params.push(`companyId=${companyId}`);
-        if (status) params.push(`status=${status}`);
-        
-        if (params.length > 0) {
-            url += '?' + params.join('&');
-        }
-        
+        params.push(`companyId=${encodeURIComponent(companyId)}`);
+        // Always pass status, even if blank
+        params.push(`status=${encodeURIComponent(status)}`);
+        url += '?' + params.join('&');
         const response = await fetch(url);
         searchResults = await response.json();
         renderSearchResults();
@@ -130,7 +140,12 @@ function renderSearchResults() {
 
 // Reset filters and clear search
 function resetFilters() {
-    document.getElementById('companyFilter').value = '';
+    // Reset to default company (from token)
+    const userCompanyId = getCompanyIdFromToken();
+    const companyFilter = document.getElementById('companyFilter');
+    if (userCompanyId && companyFilter) {
+        companyFilter.value = userCompanyId;
+    }
     document.getElementById('statusFilter').value = '';
     searchResults = [];
     renderSearchResults();

@@ -33,13 +33,18 @@ public class PurchaseOrderController {
 
     // Get all purchase orders for a company
     @GetMapping
-    public ResponseEntity<?> getPurchaseOrders(@RequestParam(required = false) Long companyId) {
+    public ResponseEntity<?> getPurchaseOrders(
+            @RequestParam Long companyId,
+            @RequestParam(required = false) String status) {
         try {
-            List<PurchaseOrder> orders;
-            if (companyId != null) {
-                orders = purchaseOrderService.getPurchaseOrdersByCompany(companyId);
-            } else {
-                orders = purchaseOrderRepository.findAll();
+            if (companyId == null) {
+                return ResponseEntity.badRequest().body("companyId is required");
+            }
+            List<PurchaseOrder> orders = purchaseOrderService.getPurchaseOrdersByCompany(companyId);
+            if (status != null && !status.isEmpty()) {
+                orders = orders.stream()
+                        .filter(po -> po.getStatus() != null && po.getStatus().toString().equalsIgnoreCase(status))
+                        .collect(Collectors.toList());
             }
             List<PurchaseOrderDTO> dtos = orders.stream()
                 .map(PurchaseOrderDTO::fromPurchaseOrder)
