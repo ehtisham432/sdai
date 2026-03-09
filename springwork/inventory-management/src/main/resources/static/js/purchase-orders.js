@@ -8,11 +8,167 @@ let receiveItems = [];
 
 // Initialize the page
 document.addEventListener('DOMContentLoaded', function() {
-	//alert('inside po js');
+    loadHeaderMenu();
+    loadUserInfo();
     loadCompanies();
     loadProducts();
     setupFormSubmission();
 });
+
+// Load header menu from screens with display type D or HD and user company role
+async function loadHeaderMenu() {
+    try {
+        // Extract roleId from JWT (client side)
+        let roleId = null;
+        const token = localStorage.getItem('jwtToken') || (JSON.parse(localStorage.getItem('loginResponse')||'{}').token || '');
+        if (token) {
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                if (payload.roleId) roleId = payload.roleId;
+            } catch {}
+        }
+        let url = '/api/dashboard/load';
+        if (roleId) {
+            url += `?roleId=${encodeURIComponent(roleId)}`;
+        }
+        let dashboardData = null;
+        let screens = [];
+        let userRoleId = roleId;
+        let res = await fetch(url);
+        if (res.ok) {
+            const result = await res.json();
+            if (result.success && result.data) {
+                dashboardData = result.data;
+                if (dashboardData.roleScreens && Array.isArray(dashboardData.roleScreens)) {
+                    screens = dashboardData.roleScreens;
+                } else if (dashboardData.screens && Array.isArray(dashboardData.screens)) {
+                    screens = dashboardData.screens;
+                }
+            }
+        }
+        if (!screens.length) {
+            let fallbackRes = await fetch('/api/dashboard/screens');
+            if (fallbackRes.ok) {
+                const fallbackResult = await fallbackRes.json();
+                if (fallbackResult.success && Array.isArray(fallbackResult.data)) {
+                    screens = fallbackResult.data;
+                }
+            }
+        }
+        if (!screens.length) {
+            let fallbackRes = await fetch('/screens');
+            screens = await fallbackRes.json();
+        }
+        // Filter screens with display type D or HD
+        let headerScreens = screens.filter(s =>
+            s.displayType && (s.displayType.name === 'D' || s.displayType.name === 'HD' || s.displayType === 'D' || s.displayType === 'HD')
+        );
+        if (userRoleId) {
+            headerScreens = headerScreens.filter(s => {
+                if (!s.roles) return true;
+                if (Array.isArray(s.roles)) {
+                    return s.roles.includes(userRoleId) || s.roles.some(r => r.id === userRoleId);
+                }
+                return true;
+            });
+        }
+        let navMenu = document.getElementById('headerMenu');
+        if (navMenu) {
+            navMenu.innerHTML = '';
+        }
+        const groups = new Map();
+        headerScreens.forEach(s => {
+            const grp = s.group ? `${s.group.id}::${s.group.name}` : 'nogroup::';
+            if (!groups.has(grp)) groups.set(grp, []);
+            groups.get(grp).push(s);
+        });
+        for (const [grpKey, items] of groups) {
+            if (grpKey === 'nogroup::') {
+                items.forEach(screen => {
+                    const li = document.createElement('li');
+                    li.className = 'nav-item';
+                    const link = document.createElement('a');
+                    link.className = 'nav-link';
+                    link.href = screen.path || '#';
+                    link.textContent = screen.name;
+                    li.appendChild(link);
+                    navMenu.appendChild(li);
+                });
+                continue;
+            }
+            const [gid, gname] = grpKey.split('::');
+            const li = document.createElement('li');
+            li.className = 'nav-item dropdown';
+            const toggleId = `menuGroup${gid}`;
+            const anchor = document.createElement('a');
+            anchor.className = 'nav-link dropdown-toggle';
+            anchor.href = '#';
+            anchor.id = toggleId;
+            anchor.setAttribute('role', 'button');
+            anchor.setAttribute('data-bs-toggle', 'dropdown');
+            anchor.setAttribute('aria-expanded', 'false');
+            anchor.textContent = gname;
+            const ul = document.createElement('ul');
+            ul.className = 'dropdown-menu';
+            ul.setAttribute('aria-labelledby', toggleId);
+            items.forEach(screen => {
+                const itemLi = document.createElement('li');
+                const a = document.createElement('a');
+                a.className = 'dropdown-item';
+                a.href = screen.path || '#';
+                a.textContent = screen.name;
+                itemLi.appendChild(a);
+                ul.appendChild(itemLi);
+            });
+            li.appendChild(anchor);
+            li.appendChild(ul);
+            navMenu.appendChild(li);
+        }
+        // Add logout link at the end
+        const logoutLi = document.createElement('li');
+        logoutLi.className = 'nav-item';
+        logoutLi.innerHTML = `<a class="nav-link" href="#" id="headerLogout"><i class="bi bi-box-arrow-right"></i> Logout</a>`;
+        navMenu.appendChild(logoutLi);
+        const headerLogout = document.getElementById('headerLogout');
+        if (headerLogout) {
+            headerLogout.addEventListener('click', function(e) {
+                e.preventDefault();
+                logout();
+            });
+        }
+    } catch (error) {
+        console.error('Error loading header menu:', error);
+    }
+}
+
+// Load user information into header
+async function loadUserInfo() {
+    try {
+        const token = getAuthToken();
+        if (!token) return;
+
+        // Extract user info from JWT
+        const payload = token.split('.')[1];
+        const decoded = JSON.parse(atob(payload));
+        
+        // Update user info in header
+        const userNameEl = document.getElementById('userName');
+        const userRoleEl = document.getElementById('userRole');
+        const userAvatarEl = document.getElementById('userAvatar');
+        
+        if (userNameEl && decoded.username) {
+            userNameEl.textContent = decoded.username;
+        }
+        if (userRoleEl && decoded.roleName) {
+            userRoleEl.textContent = decoded.roleName;
+        }
+        if (userAvatarEl && decoded.username) {
+            userAvatarEl.textContent = (decoded.username || 'U').charAt(0).toUpperCase();
+        }
+    } catch (error) {
+        console.error('Error loading user info:', error);
+    }
+}
 
 // Load companies for dropdown - only user assigned companies
 async function loadCompanies() {
@@ -788,6 +944,31 @@ function getCompanyIdFromToken() {
         console.error('Error decoding token:', error);
         return null;
     }
+}
+
+// Get authentication token from localStorage
+function getAuthToken() {
+    return localStorage.getItem('jwtToken') || null;
+}
+
+// Logout function
+async function logout() {
+    try {
+        const token = getAuthToken();
+        // Call Spring Boot logout endpoint
+        await fetch('/api/auth/logout', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+    } catch (e) {
+        // ignore errors on logout
+    }
+    localStorage.removeItem('loginResponse');
+    localStorage.removeItem('jwtToken');
+    window.location.href = '/index.html';
 }
 
 // Global variable to store all products (for form)
