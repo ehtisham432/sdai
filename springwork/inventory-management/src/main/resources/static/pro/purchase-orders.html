@@ -14,7 +14,7 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f4f6fa;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);/*f4f6fa*/
             min-height: 100vh;
             padding: 0;
         }
@@ -426,6 +426,12 @@
             display: block;
         }
 
+        @media (max-width: 1024px) {
+            .add-item-form {
+                grid-template-columns: 1fr 1fr auto;
+            }
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 20px;
@@ -522,21 +528,6 @@
 
         .autocomplete-item:last-child {
             border-bottom: none;
-        }
-
-        .add-item-form {
-            display: grid;
-            grid-template-columns: 2fr 1fr 1fr auto;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-
-        .add-item-form input,
-        .add-item-form select {
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 3px;
-            font-size: 13px;
         }
         </style>
 </head>
