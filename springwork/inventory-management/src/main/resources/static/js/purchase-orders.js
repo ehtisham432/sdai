@@ -985,12 +985,15 @@ function setupProductAutocomplete(inputId, suggestionsId, companySelectId) {
     
     if (!input) return;
     
+    let currentSelectedIndex = -1;
+    
     input.addEventListener('input', function() {
         const query = this.value.toLowerCase();
         const selectedCompanyId = companySelect ? companySelect.value : null;
         
         if (query.length === 0) {
             suggestionsContainer.classList.remove('active');
+            currentSelectedIndex = -1;
             return;
         }
         
@@ -1004,23 +1007,64 @@ function setupProductAutocomplete(inputId, suggestionsId, companySelectId) {
         if (filteredProducts.length === 0) {
             suggestionsContainer.innerHTML = '<div class="autocomplete-item" style="color: #999;">No products found</div>';
             suggestionsContainer.classList.add('active');
+            currentSelectedIndex = -1;
             return;
         }
         
-        suggestionsContainer.innerHTML = filteredProducts.map(product => `
-            <div class="autocomplete-item" onclick="selectProduct('${inputId}', '${suggestionsId}', ${product.id}, '${product.name.replace(/'/g, "\\'")}', '${product.company?.name || 'N/A'}')">
+        suggestionsContainer.innerHTML = filteredProducts.map((product, index) => `
+            <div class="autocomplete-item" data-index="${index}" onclick="selectProduct('${inputId}', '${suggestionsId}', ${product.id}, '${product.name.replace(/'/g, "\\'")}', '${product.company?.name || 'N/A'}')">
                 <strong>${product.name}</strong> <br>
                 <small style="color: #666;">${product.company?.name || 'N/A'}</small>
             </div>
         `).join('');
         
         suggestionsContainer.classList.add('active');
+        currentSelectedIndex = -1;
+    });
+    
+    input.addEventListener('keydown', function(e) {
+        const items = suggestionsContainer.querySelectorAll('.autocomplete-item');
+        
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (!suggestionsContainer.classList.contains('active')) return;
+            
+            currentSelectedIndex = Math.min(currentSelectedIndex + 1, items.length - 1);
+            updateSelectedItem(items, currentSelectedIndex);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (!suggestionsContainer.classList.contains('active')) return;
+            
+            currentSelectedIndex = Math.max(currentSelectedIndex - 1, -1);
+            updateSelectedItem(items, currentSelectedIndex);
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (currentSelectedIndex >= 0 && currentSelectedIndex < items.length) {
+                items[currentSelectedIndex].click();
+            }
+        } else if (e.key === 'Escape') {
+            suggestionsContainer.classList.remove('active');
+            currentSelectedIndex = -1;
+        }
     });
     
     input.addEventListener('blur', function() {
         setTimeout(() => {
             suggestionsContainer.classList.remove('active');
+            currentSelectedIndex = -1;
         }, 200);
+    });
+}
+
+// Helper function to update selected item styling
+function updateSelectedItem(items, index) {
+    items.forEach((item, i) => {
+        if (i === index) {
+            item.classList.add('selected');
+            item.scrollIntoView({ block: 'nearest' });
+        } else {
+            item.classList.remove('selected');
+        }
     });
 }
 
@@ -1041,11 +1085,14 @@ function setupProductAutocompleteForDetails(inputId, suggestionsId, companyId) {
     
     if (!input) return;
     
+    let currentSelectedIndex = -1;
+    
     input.addEventListener('input', function() {
         const query = this.value.toLowerCase();
         
         if (query.length === 0) {
             suggestionsContainer.classList.remove('active');
+            currentSelectedIndex = -1;
             return;
         }
         
@@ -1059,22 +1106,51 @@ function setupProductAutocompleteForDetails(inputId, suggestionsId, companyId) {
         if (filteredProducts.length === 0) {
             suggestionsContainer.innerHTML = '<div class="autocomplete-item" style="color: #999;">No products found</div>';
             suggestionsContainer.classList.add('active');
+            currentSelectedIndex = -1;
             return;
         }
         
-        suggestionsContainer.innerHTML = filteredProducts.map(product => `
-            <div class="autocomplete-item" onclick="selectProduct('${inputId}', '${suggestionsId}', ${product.id}, '${product.name.replace(/'/g, "\\'")}', '${product.company?.name || 'N/A'}')">
+        suggestionsContainer.innerHTML = filteredProducts.map((product, index) => `
+            <div class="autocomplete-item" data-index="${index}" onclick="selectProduct('${inputId}', '${suggestionsId}', ${product.id}, '${product.name.replace(/'/g, "\\'")}', '${product.company?.name || 'N/A'}')">
                 <strong>${product.name}</strong> <br>
                 <small style="color: #666;">${product.company?.name || 'N/A'}</small>
             </div>
         `).join('');
         
         suggestionsContainer.classList.add('active');
+        currentSelectedIndex = -1;
+    });
+    
+    input.addEventListener('keydown', function(e) {
+        const items = suggestionsContainer.querySelectorAll('.autocomplete-item');
+        
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (!suggestionsContainer.classList.contains('active')) return;
+            
+            currentSelectedIndex = Math.min(currentSelectedIndex + 1, items.length - 1);
+            updateSelectedItem(items, currentSelectedIndex);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (!suggestionsContainer.classList.contains('active')) return;
+            
+            currentSelectedIndex = Math.max(currentSelectedIndex - 1, -1);
+            updateSelectedItem(items, currentSelectedIndex);
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (currentSelectedIndex >= 0 && currentSelectedIndex < items.length) {
+                items[currentSelectedIndex].click();
+            }
+        } else if (e.key === 'Escape') {
+            suggestionsContainer.classList.remove('active');
+            currentSelectedIndex = -1;
+        }
     });
     
     input.addEventListener('blur', function() {
         setTimeout(() => {
             suggestionsContainer.classList.remove('active');
+            currentSelectedIndex = -1;
         }, 200);
     });
 }
