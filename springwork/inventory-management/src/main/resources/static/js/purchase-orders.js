@@ -174,6 +174,7 @@ async function loadUserInfo() {
 async function loadCompanies() {
     try {
         const userId = getUserIdFromToken();
+        alert(userId);
         if (!userId) {
             showAlert('User information not available', 'error');
             return;

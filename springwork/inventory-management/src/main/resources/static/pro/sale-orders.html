@@ -3,18 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Purchase Orders Management</title>
+    <title>Sales Orders & Invoices Management</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="/js/purchase-orders.js"></script>
+    <script src="/js/sale-orders.js"></script>
     <script src="/js/auth.js"></script>
     <style>
         
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);/*f4f6fa*/
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 0;
         }
@@ -216,7 +216,7 @@
             color: #f39c12;
         }
 
-        .status-received {
+        .status-completed {
             background: #d5f4e6;
             color: #27ae60;
         }
@@ -301,7 +301,7 @@
 
         .add-item-form {
             display: grid;
-            grid-template-columns: 2fr 1fr 1fr auto;
+            grid-template-columns: 2fr 1fr 1fr 1fr auto;
             gap: 10px;
             margin-bottom: 15px;
         }
@@ -366,38 +366,6 @@
             font-weight: 600;
         }
 
-        .inventory-progress {
-            background: #e8f4f8;
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-        }
-
-        .progress-item {
-            margin-bottom: 10px;
-        }
-
-        .progress-label {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 5px;
-            font-size: 13px;
-        }
-
-        .progress-bar {
-            width: 100%;
-            height: 8px;
-            background: #ddd;
-            border-radius: 5px;
-            overflow: hidden;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #667eea, #764ba2);
-            transition: width 0.3s ease;
-        }
-
         .form-actions {
             display: flex;
             gap: 10px;
@@ -411,19 +379,6 @@
             justify-content: flex-end;
             margin-top: 20px;
             flex-wrap: wrap;
-        }
-
-        .receive-section {
-            background: #ffffff;
-            padding: 20px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            margin-bottom: 20px;
-            display: none;
-        }
-
-        .receive-section.active {
-            display: block;
         }
 
         @media (max-width: 1024px) {
@@ -529,18 +484,39 @@
         .autocomplete-item:last-child {
             border-bottom: none;
         }
+
+        .totals-summary {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .total-row:last-child {
+            border-bottom: none;
+            font-weight: 700;
+            font-size: 16px;
+            color: #667eea;
+        }
         </style>
 </head>
 <body>
     <div class="dashboard-header">
         <nav class="navbar navbar-expand-lg navbar-light">
             <div class="container-fluid px-4">
-                <a class="navbar-brand" href="/pro/purchase-orders.html">
-                    <i class="bi bi-clipboard-check"></i> Purchase Orders
+                <a class="navbar-brand" href="/pro/sale-orders.html">
+                    <i class="bi bi-receipt"></i> Sales Orders & Invoices
                 </a>
                 <span class="navbar-text mx-3 text-muted">|</span>
-                <a class="navbar-brand" href="/pro/sale-orders.html" style="font-size: 1rem; font-weight: 500;">
-                    <i class="bi bi-receipt"></i> Sales Orders
+                <a class="navbar-brand" href="/pro/purchase-orders.html" style="font-size: 1rem; font-weight: 500;">
+                    <i class="bi bi-clipboard-check"></i> Purchase Orders
                 </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMenu" aria-controls="navbarMenu" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
@@ -560,7 +536,7 @@
     <nav aria-label="breadcrumb" class="d-lg-none d-block px-3 pt-2">
         <ol class="breadcrumb mb-2" id="dashboardBreadcrumb">
             <li class="breadcrumb-item"><a href="/pro/pos-dashboard.html">Dashboard</a></li>
-            <li class="breadcrumb-item active" aria-current="page" id="breadcrumbCurrent">Purchase Orders</li>
+            <li class="breadcrumb-item active" aria-current="page" id="breadcrumbCurrent">Sales Orders & Invoices</li>
         </ol>
     </nav>
     <div class="container">
@@ -571,7 +547,7 @@
         <div class="tabs">
             <button class="tab-button active" onclick="switchTab('filters-tab', event)">Filters</button>
             <button class="tab-button" onclick="switchTab('results-tab', event)">Search Results</button>
-            <button class="tab-button" onclick="switchTab('details-tab', event)">Order Details / Create</button>
+            <button class="tab-button" onclick="switchTab('details-tab', event)">Invoice Details / Create</button>
         </div>
 
         <!-- Tab 1: Filters -->
@@ -588,7 +564,7 @@
                     <select id="statusFilter">
                         <option value="">All Status</option>
                         <option value="PENDING">Pending</option>
-                        <option value="RECEIVED">Received</option>
+                        <option value="COMPLETED">Completed</option>
                         <option value="CANCELLED">Cancelled</option>
                     </select>
                 </div>
@@ -605,40 +581,35 @@
                 <table>
                     <thead>
                         <tr>
-                            <th>PO Number</th>
-                            <th>Supplier</th>
+                            <th>Invoice Number</th>
+                            <th>Customer</th>
                             <th>Company</th>
-                            <th>Order Date</th>
-                            <th>Total Amount</th>
+                            <th>Sale Date</th>
+                            <th>Amount</th>
                             <th>Status</th>
                             <th>Action</th>
                         </tr>
                     </thead>
                     <tbody id="resultsTableBody">
                         <tr>
-                            <td colspan="7" class="empty-state">Use Filters to search for purchase orders</td>
+                            <td colspan="7" class="empty-state">Use Filters to search for sale orders</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
         </div>
 
-        <!-- Tab 3: Order Details / Create -->
+        <!-- Tab 3: Invoice Details / Create -->
         <div id="details-tab" class="tab-content">
             <div id="detailsAlert" class="alert"></div>
             <div id="orderDetailsContainer" style="display:none;">
-                <!-- Order Details Section -->
+                <!-- Invoice Details Section -->
                 <div class="form-section">
-                    <h2 style="margin-bottom: 20px; color: #333;" id="detailsPoNumber">Purchase Order Details</h2>
-                    <div id="poDetails"></div>
-
-                    <div class="inventory-progress" id="inventoryProgress" style="display:none;">
-                        <h3>Inventory Received Progress</h3>
-                        <div id="progressItems"></div>
-                    </div>
+                    <h2 style="margin-bottom: 20px; color: #333;" id="detailsInvoiceNumber">Sale Order Details</h2>
+                    <div id="soDetails"></div>
 
                     <div class="items-section">
-                        <h3>Order Items</h3>
+                        <h3>Invoice Items</h3>
                         <div class="table-responsive">
                             <table>
                                 <thead>
@@ -647,7 +618,6 @@
                                         <th>Quantity</th>
                                         <th>Unit Price</th>
                                         <th>Subtotal</th>
-                                        <th>Received</th>
                                         <th>Action</th>
                                     </tr>
                                 </thead>
@@ -666,84 +636,92 @@
                             </div>
                             <input type="number" id="detailsItemQuantity" placeholder="Quantity" min="1">
                             <input type="number" id="detailsItemUnitPrice" placeholder="Unit Price" min="0" step="0.01">
-                            <button type="button" class="btn-primary" onclick="addItemToExistingPO()">Add</button>
-                        </div>
-                    </div>
-
-                    <div class="receive-section" id="receiveSection">
-                        <h3>Receive Inventory</h3>
-                        <table class="items-table">
-                            <thead>
-                                <tr>
-                                    <th>Product</th>
-                                    <th>Remaining</th>
-                                    <th>Receive Quantity</th>
-                                </tr>
-                            </thead>
-                            <tbody id="receiveItemsTable">
-                            </tbody>
-                        </table>
-                        <div class="form-actions">
-                            <button type="button" class="btn-secondary" onclick="cancelReceiveInventory()">Cancel</button>
-                            <button type="button" class="btn-success" onclick="submitReceiveInventory()">Confirm Receive</button>
+                            <input type="number" id="detailsItemDiscount" placeholder="Discount" min="0" step="0.01">
+                            <button type="button" class="btn-primary" onclick="addItemToExistingSO()">Add</button>
                         </div>
                     </div>
 
                     <div class="details-actions" id="detailsActions">
                         <button type="button" class="btn-secondary" onclick="clearDetailsTab()">Close</button>
-                        <button type="button" class="btn-primary" id="editPoBtn" onclick="editPurchaseOrder()">Edit</button>
-                        <button type="button" class="btn-success" id="receiveBtn" onclick="showReceiveInventoryForm()">Receive Inventory</button>
-                        <button type="button" class="btn-danger" id="deletePoBtn" onclick="deletePurchaseOrder()">Delete</button>
+                        <button type="button" class="btn-primary" id="editSOBtn" onclick="editSaleOrder()">Edit</button>
+                        <button type="button" class="btn-success" id="completeBtn" onclick="completeSaleOrder()">Complete Sale</button>
+                        <button type="button" class="btn-danger" id="deleteSOBtn" onclick="deleteSaleOrder()">Delete</button>
                     </div>
                 </div>
             </div>
 
             <div id="createFormContainer">
-                <!-- Create/Edit Purchase Order Form -->
+                <!-- Create/Edit Sale Order Form -->
                 <div class="form-section">
-                    <h2 style="margin-bottom: 20px; color: #333;" id="formTitle">New Purchase Order</h2>
+                    <h2 style="margin-bottom: 20px; color: #333;" id="formTitle">New Sale Order</h2>
 
-                    <form id="poForm">
+                    <form id="soForm">
                         <div class="form-grid">
                             <div class="form-group">
-                                <label>PO Number*</label>
-                                <input type="text" id="poNumber" required>
+                                <label>Invoice Number*</label>
+                                <input type="text" id="soNumber" required>
                             </div>
 
                             <div class="form-group">
                                 <label>Company*</label>
-                                <select id="poCompany" required>
+                                <select id="soCompany" required>
                                     <option value="">Select a company</option>
                                 </select>
                             </div>
 
                             <div class="form-group">
-                                <label>Supplier*</label>
-                                <input type="text" id="poSupplier" required>
+                                <label>Customer Name*</label>
+                                <input type="text" id="soCustomerName" required>
                             </div>
 
                             <div class="form-group">
-                                <label>Order Date*</label>
-                                <input type="date" id="poOrderDate" required>
+                                <label>Customer Email</label>
+                                <input type="email" id="soCustomerEmail">
                             </div>
 
                             <div class="form-group">
-                                <label>Expected Delivery Date</label>
-                                <input type="date" id="poDeliveryDate">
+                                <label>Customer Phone</label>
+                                <input type="tel" id="soCustomerPhone">
+                            </div>
+
+                            <div class="form-group">
+                                <label>Customer Address</label>
+                                <input type="text" id="soCustomerAddress">
+                            </div>
+
+                            <div class="form-group">
+                                <label>Sale Date*</label>
+                                <input type="date" id="soSaleDate" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Due Date</label>
+                                <input type="date" id="soDueDate">
+                            </div>
+
+                            <div class="form-group">
+                                <label>Payment Method</label>
+                                <select id="soPaymentMethod">
+                                    <option value="">Select a method</option>
+                                    <option value="CASH">Cash</option>
+                                    <option value="CARD">Card</option>
+                                    <option value="CHECK">Check</option>
+                                    <option value="BANK_TRANSFER">Bank Transfer</option>
+                                </select>
                             </div>
 
                             <div class="form-group">
                                 <label>Status</label>
-                                <select id="poStatus">
+                                <select id="soStatus">
                                     <option value="PENDING">Pending</option>
-                                    <option value="RECEIVED">Received</option>
+                                    <option value="COMPLETED">Completed</option>
                                     <option value="CANCELLED">Cancelled</option>
                                 </select>
                             </div>
 
                             <div class="form-group">
                                 <label>Notes</label>
-                                <textarea id="poNotes"></textarea>
+                                <textarea id="soNotes"></textarea>
                             </div>
                         </div>
 
@@ -756,7 +734,8 @@
                                 </div>
                                 <input type="number" id="itemQuantity" placeholder="Quantity" min="1">
                                 <input type="number" id="itemUnitPrice" placeholder="Unit Price" min="0" step="0.01">
-                                <button type="button" class="btn-primary" onclick="addItemToPOForm()">Add</button>
+                                <input type="number" id="itemDiscount" placeholder="Discount" min="0" step="0.01">
+                                <button type="button" class="btn-primary" onclick="addItemToSOForm()">Add</button>
                             </div>
 
                             <div class="table-responsive">
@@ -766,6 +745,7 @@
                                             <th>Product</th>
                                             <th>Quantity</th>
                                             <th>Unit Price</th>
+                                            <th>Discount</th>
                                             <th>Subtotal</th>
                                             <th>Action</th>
                                         </tr>
@@ -775,14 +755,29 @@
                                 </table>
                             </div>
 
-                            <div style="padding: 10px; background: #f0f0f0; border-radius: 5px; text-align: right; font-weight: 600; margin-top: 10px;">
-                                Total Amount: $<span id="poTotalAmount">0.00</span>
+                            <div class="totals-summary">
+                                <div class="total-row">
+                                    <span>Subtotal:</span>
+                                    <span>$<span id="soSubtotal">0.00</span></span>
+                                </div>
+                                <div class="total-row">
+                                    <span>Total Discount:</span>
+                                    <span>-$<span id="soTotalDiscount">0.00</span></span>
+                                </div>
+                                <div class="total-row">
+                                    <span>Tax:</span>
+                                    <span>+$<span id="soTotalTax">0.00</span></span>
+                                </div>
+                                <div class="total-row">
+                                    <span>Final Amount:</span>
+                                    <span>$<span id="soFinalAmount">0.00</span></span>
+                                </div>
                             </div>
                         </div>
 
                         <div class="form-actions">
                             <button type="button" class="btn-secondary" onclick="clearDetailsTab()">Cancel</button>
-                            <button type="submit" class="btn-primary">Save Purchase Order</button>
+                            <button type="submit" class="btn-primary">Save Sale Order</button>
                         </div>
                     </form>
                 </div>
@@ -790,6 +785,6 @@
         </div>
     </div>
 
-    <script src="../js/purchase-orders.js"></script>
+    <script src="../js/sale-orders.js"></script>
 </body>
 </html>
