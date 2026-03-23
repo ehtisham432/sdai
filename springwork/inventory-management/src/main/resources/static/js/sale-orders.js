@@ -167,7 +167,6 @@ async function loadUserInfo() {
 async function loadCompanies() {
     try {
         const userId = getUserIdFromToken();
-        alert(userId);
         if (!userId) {
             showAlert('User information not available', 'error');
             return;
@@ -851,8 +850,11 @@ function getUserIdFromToken() {
     try {
         const token = getAuthToken();
         if (!token) return null;
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        return payload.userId;
+        //const payload = JSON.parse(atob(token.split('.')[1]));
+         const payload = token.split('.')[1];
+        const decoded = JSON.parse(atob(payload));
+        return decoded.sub || decoded.userId;
+       // return payload.userId;
     } catch (error) {
         console.error('Error extracting user ID from token:', error);
         return null;

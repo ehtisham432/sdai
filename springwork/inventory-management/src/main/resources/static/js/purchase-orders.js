@@ -919,7 +919,7 @@ function getUserIdFromToken() {
     try {
         const payload = token.split('.')[1];
         const decoded = JSON.parse(atob(payload));
-        return decoded.userId || decoded.sub;
+        return decoded.sub || decoded.userId;
     } catch (error) {
         console.error('Error decoding token:', error);
         return null;
