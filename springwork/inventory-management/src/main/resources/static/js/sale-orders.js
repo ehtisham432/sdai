@@ -866,8 +866,8 @@ function getCompanyIdFromToken() {
         const token = getAuthToken();
         if (!token) return null;
         const payload = JSON.parse(atob(token.split('.')[1]));
-        if (payload.companyId) {
-            return payload.companyId;
+        if (payload.tenantId) {
+            return payload.tenantId;
         }
         return null;
     } catch (error) {
