@@ -907,33 +907,74 @@ function setupProductAutocomplete(inputId, suggestionsId, companySelectId) {
     
     if (!input) return;
     
+    let selectedIndex = -1;
+    let currentFiltered = [];
+    
     input.addEventListener('input', function() {
         const value = this.value.toLowerCase();
         
         if (value.length < 1) {
             suggestionsList.classList.remove('active');
+            selectedIndex = -1;
             return;
         }
         
-        const filtered = window.allProducts.filter(p =>
+        currentFiltered = window.allProducts.filter(p =>
             p.name.toLowerCase().includes(value) &&
             (!companySelect.value || !p.company || p.company.id == companySelect.value)
         );
         
-        if (filtered.length === 0) {
+        if (currentFiltered.length === 0) {
             suggestionsList.classList.remove('active');
+            selectedIndex = -1;
             return;
         }
         
-        suggestionsList.innerHTML = filtered.map((product, index) =>
+        suggestionsList.innerHTML = currentFiltered.map((product, index) =>
             `<div class="autocomplete-item" onclick="selectProduct('${inputId}', '${suggestionsId}', ${product.id}, '${product.name.replace(/'/g, "\\'")}', '${product.company?.name?.replace(/'/g, "\\'") || ''}')">${product.name}</div>`
         ).join('');
         
         suggestionsList.classList.add('active');
+        selectedIndex = -1;
+    });
+    
+    input.addEventListener('keydown', function(e) {
+        const items = suggestionsList.querySelectorAll('.autocomplete-item');
+        
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+            updateHighlight(items, selectedIndex);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            selectedIndex = Math.max(selectedIndex - 1, -1);
+            updateHighlight(items, selectedIndex);
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (selectedIndex >= 0 && selectedIndex < currentFiltered.length) {
+                const product = currentFiltered[selectedIndex];
+                selectProduct(inputId, suggestionsId, product.id, product.name, product.company?.name || '');
+            }
+        } else if (e.key === 'Escape') {
+            e.preventDefault();
+            suggestionsList.classList.remove('active');
+            selectedIndex = -1;
+        }
     });
     
     input.addEventListener('blur', function() {
         setTimeout(() => suggestionsList.classList.remove('active'), 200);
+    });
+}
+
+function updateHighlight(items, selectedIndex) {
+    items.forEach((item, index) => {
+        if (index === selectedIndex) {
+            item.classList.add('selected');
+            item.scrollIntoView({ block: 'nearest' });
+        } else {
+            item.classList.remove('selected');
+        }
     });
 }
 
@@ -953,42 +994,62 @@ function setupProductAutocompleteForDetails(inputId, suggestionsId, companyId) {
     
     if (!input) return;
     
+    let selectedIndex = -1;
+    let currentFiltered = [];
+    
     input.addEventListener('input', function() {
         const value = this.value.toLowerCase();
         
         if (value.length < 1) {
             suggestionsList.classList.remove('active');
+            selectedIndex = -1;
             return;
         }
         
-        const filtered = window.allProducts.filter(p =>
+        currentFiltered = window.allProducts.filter(p =>
             p.name.toLowerCase().includes(value) &&
             (!companyId || !p.company || p.company.id == companyId)
         );
         
-        if (filtered.length === 0) {
+        if (currentFiltered.length === 0) {
             suggestionsList.classList.remove('active');
+            selectedIndex = -1;
             return;
         }
         
-        suggestionsList.innerHTML = filtered.map((product, index) =>
+        suggestionsList.innerHTML = currentFiltered.map((product, index) =>
             `<div class="autocomplete-item" onclick="selectProduct('${inputId}', '${suggestionsId}', ${product.id}, '${product.name.replace(/'/g, "\\'")}', '${product.company?.name?.replace(/'/g, "\\'") || ''}')">${product.name}</div>`
         ).join('');
         
         suggestionsList.classList.add('active');
+        selectedIndex = -1;
+    });
+    
+    input.addEventListener('keydown', function(e) {
+        const items = suggestionsList.querySelectorAll('.autocomplete-item');
+        
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+            updateHighlight(items, selectedIndex);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            selectedIndex = Math.max(selectedIndex - 1, -1);
+            updateHighlight(items, selectedIndex);
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (selectedIndex >= 0 && selectedIndex < currentFiltered.length) {
+                const product = currentFiltered[selectedIndex];
+                selectProduct(inputId, suggestionsId, product.id, product.name, product.company?.name || '');
+            }
+        } else if (e.key === 'Escape') {
+            e.preventDefault();
+            suggestionsList.classList.remove('active');
+            selectedIndex = -1;
+        }
     });
     
     input.addEventListener('blur', function() {
         setTimeout(() => suggestionsList.classList.remove('active'), 200);
     });
 }
-
-// Also set global variable
-const originalLoadProducts = loadProducts;
-loadProducts = async function() {
-    const res = await originalLoadProducts();
-    window.allProducts = allProducts;
-    return res;
-};
-
-loadProducts();

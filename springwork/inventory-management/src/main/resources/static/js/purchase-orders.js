@@ -1154,19 +1154,3 @@ function setupProductAutocompleteForDetails(inputId, suggestionsId, companyId) {
         }, 200);
     });
 }
-
-// Also need to update loadProducts to set global variable
-const originalLoadProducts = loadProducts;
-loadProducts = async function() {
-    try {
-        const response = await fetch('/api/products');
-        allProducts = await response.json();
-        
-        // Setup autocomplete for main form
-        setupProductAutocomplete('itemProduct', 'itemProductSuggestions', 'poCompany');
-    } catch (error) {
-        console.error('Error loading products:', error);
-    }
-};
-
-loadProducts();
