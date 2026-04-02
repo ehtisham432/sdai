@@ -198,11 +198,8 @@ public class SaleOrderController {
         public Long id;
         public Object company;
         public Object createdBy;
+        public Object customer;
         public String invoiceNumber;
-        public String customerName;
-        public String customerEmail;
-        public String customerPhone;
-        public String customerAddress;
         public Object saleDate;
         public Object dueDate;
         public Double totalAmount;
@@ -221,11 +218,8 @@ public class SaleOrderController {
             dto.id = so.getId();
             dto.company = so.getCompany();
             dto.createdBy = so.getCreatedBy();
+            dto.customer = so.getCustomer();
             dto.invoiceNumber = so.getInvoiceNumber();
-            dto.customerName = so.getCustomerName();
-            dto.customerEmail = so.getCustomerEmail();
-            dto.customerPhone = so.getCustomerPhone();
-            dto.customerAddress = so.getCustomerAddress();
             dto.saleDate = so.getSaleDate();
             dto.dueDate = so.getDueDate();
             dto.totalAmount = so.getTotalAmount();

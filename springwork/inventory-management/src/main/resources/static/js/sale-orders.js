@@ -4,6 +4,8 @@ let searchResults = [];
 let currentEditingSO = null;
 let currentViewingSO = null;
 let formItems = [];
+let allCustomers = [];
+let counterSaleCustomer = null;
 
 // Initialize the page
 document.addEventListener('DOMContentLoaded', function() {
@@ -11,6 +13,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadUserInfo();
     loadCompanies();
     loadProducts();
+    loadCustomers();
     setupFormSubmission();
 });
 
@@ -229,6 +232,28 @@ async function loadProducts() {
     }
 }
 
+// Load customers for dropdown
+async function loadCustomers() {
+    try {
+        const userCompanyId = getCompanyIdFromToken();
+        if (!userCompanyId) {
+            console.log('No company ID found in token');
+            return;
+        }
+        
+        const response = await fetch(`/api/customers/company/${userCompanyId}`);
+        allCustomers = await response.json();
+        
+        // Look for the "Counter Sale" customer, create if not exists
+        counterSaleCustomer = allCustomers.find(c => c.name === 'Counter Sale');
+        
+        // Setup customer autocomplete
+        setupCustomerAutocomplete('soCustomer', 'soCustomerSuggestions', 'soCompany');
+    } catch (error) {
+        console.error('Error loading customers:', error);
+    }
+}
+
 // Perform search with filters
 async function performSearch() {
     try {
@@ -267,7 +292,7 @@ function renderSearchResults() {
     tbody.innerHTML = searchResults.map(so => `
         <tr>
             <td><strong>${so.invoiceNumber}</strong></td>
-            <td>${so.customerName}</td>
+            <td>${so.customer?.name || 'N/A'}</td>
             <td>${so.company?.name || 'N/A'}</td>
             <td>${formatDate(so.saleDate)}</td>
             <td>$${(so.finalAmount || 0).toFixed(2)}</td>
@@ -330,6 +355,14 @@ function createNewSaleOrder() {
     document.getElementById('createFormContainer').style.display = 'block';
     
     document.getElementById('soSaleDate').valueAsDate = new Date();
+    
+    // Set default customer to "Counter Sale" if available
+    const userCompanyId = getCompanyIdFromToken();
+    if (userCompanyId) {
+        document.getElementById('soCompany').value = userCompanyId;
+        loadCustomersForCompany(userCompanyId);
+    }
+    
     switchTab('details-tab', null);
 }
 
@@ -423,6 +456,7 @@ function setupFormSubmission() {
     const companySelect = document.getElementById('soCompany');
     if (companySelect) {
         companySelect.addEventListener('change', function() {
+            loadCustomersForCompany(this.value);
             setupProductAutocompleteForDetails('detailsItemProduct', 'detailsItemProductSuggestions', this.value);
         });
     }
@@ -432,17 +466,14 @@ function setupFormSubmission() {
         
         const invoiceNumber = document.getElementById('soNumber').value;
         const companyId = document.getElementById('soCompany').value;
-        const customerName = document.getElementById('soCustomerName').value;
-        const customerEmail = document.getElementById('soCustomerEmail').value;
-        const customerPhone = document.getElementById('soCustomerPhone').value;
-        const customerAddress = document.getElementById('soCustomerAddress').value;
+        const customerId = document.getElementById('soCustomerId').value;
         const saleDate = document.getElementById('soSaleDate').value;
         const dueDate = document.getElementById('soDueDate').value;
         const paymentMethod = document.getElementById('soPaymentMethod').value;
         const status = document.getElementById('soStatus').value;
         const notes = document.getElementById('soNotes').value;
         
-        if (!invoiceNumber || !companyId || !customerName || !saleDate || formItems.length === 0) {
+        if (!invoiceNumber || !companyId || !customerId || !saleDate || formItems.length === 0) {
             showAlert('Please fill all required fields and add at least one item', 'error');
             return;
         }
@@ -454,11 +485,8 @@ function setupFormSubmission() {
         const saleOrderData = {
             invoiceNumber: invoiceNumber,
             company: { id: companyId },
+            customer: { id: customerId },
             createdBy: { id: getUserIdFromToken() },
-            customerName: customerName,
-            customerEmail: customerEmail,
-            customerPhone: customerPhone,
-            customerAddress: customerAddress,
             saleDate: new Date(saleDate),
             dueDate: dueDate ? new Date(dueDate) : null,
             paymentMethod: paymentMethod,
@@ -529,15 +557,15 @@ async function viewSaleOrder(id) {
                 </div>
                 <div class="details-item">
                     <strong>Customer</strong>
-                    <div class="details-item-value">${currentViewingSO.customerName}</div>
+                    <div class="details-item-value">${currentViewingSO.customer?.name || 'N/A'}</div>
                 </div>
                 <div class="details-item">
                     <strong>Email</strong>
-                    <div class="details-item-value">${currentViewingSO.customerEmail || 'N/A'}</div>
+                    <div class="details-item-value">${currentViewingSO.customer?.email || 'N/A'}</div>
                 </div>
                 <div class="details-item">
                     <strong>Phone</strong>
-                    <div class="details-item-value">${currentViewingSO.customerPhone || 'N/A'}</div>
+                    <div class="details-item-value">${currentViewingSO.customer?.phone || 'N/A'}</div>
                 </div>
                 <div class="details-item">
                     <strong>Sale Date</strong>
@@ -694,10 +722,8 @@ function editSaleOrder() {
     document.getElementById('formTitle').textContent = 'Edit Sale Order';
     document.getElementById('soNumber').value = currentViewingSO.invoiceNumber;
     document.getElementById('soCompany').value = currentViewingSO.company?.id || '';
-    document.getElementById('soCustomerName').value = currentViewingSO.customerName;
-    document.getElementById('soCustomerEmail').value = currentViewingSO.customerEmail || '';
-    document.getElementById('soCustomerPhone').value = currentViewingSO.customerPhone || '';
-    document.getElementById('soCustomerAddress').value = currentViewingSO.customerAddress || '';
+    document.getElementById('soCustomer').value = currentViewingSO.customer?.name || '';
+    document.getElementById('soCustomerId').value = currentViewingSO.customer?.id || '';
     document.getElementById('soSaleDate').value = formatDateForInput(currentViewingSO.saleDate);
     document.getElementById('soDueDate').value = formatDateForInput(currentViewingSO.dueDate);
     document.getElementById('soPaymentMethod').value = currentViewingSO.paymentMethod || '';
@@ -984,6 +1010,102 @@ function selectProduct(inputId, suggestionsId, productId, productName, companyNa
     
     input.value = productName;
     input.setAttribute('data-product-id', productId);
+    suggestionsList.classList.remove('active');
+}
+
+// Load customers for a specific company
+async function loadCustomersForCompany(companyId) {
+    try {
+        const response = await fetch(`/api/customers/company/${companyId}`);
+        const customers = await response.json();
+        allCustomers = customers;
+        
+        // Set default to Counter Sale if available
+        const counterSale = customers.find(c => c.name === 'Counter Sale');
+        if (counterSale) {
+            document.getElementById('soCustomer').value = counterSale.name;
+            document.getElementById('soCustomerId').value = counterSale.id;
+        }
+        
+        setupCustomerAutocomplete('soCustomer', 'soCustomerSuggestions');
+    } catch (error) {
+        console.error('Error loading customers for company:', error);
+    }
+}
+
+// Setup customer autocomplete functionality
+function setupCustomerAutocomplete(inputId, suggestionsId) {
+    const input = document.getElementById(inputId);
+    const suggestionsList = document.getElementById(suggestionsId);
+    
+    if (!input) return;
+    
+    let selectedIndex = -1;
+    let currentFiltered = [];
+    
+    input.addEventListener('input', function() {
+        const value = this.value.toLowerCase();
+        
+        if (value.length < 1) {
+            currentFiltered = allCustomers;
+            selectedIndex = -1;
+        } else {
+            currentFiltered = allCustomers.filter(c =>
+                c.name.toLowerCase().includes(value)
+            );
+            selectedIndex = -1;
+        }
+        
+        if (currentFiltered.length === 0) {
+            suggestionsList.classList.remove('active');
+            return;
+        }
+        
+        suggestionsList.innerHTML = currentFiltered.map((customer) =>
+            `<div class="autocomplete-item" data-customer-id="${customer.id}" onclick="selectCustomer('${inputId}', '${suggestionsId}', ${customer.id}, '${customer.name.replace(/'/g, "\\'")}')">${customer.name}</div>`
+        ).join('');
+        
+        suggestionsList.classList.add('active');
+    });
+    
+    input.addEventListener('keydown', function(e) {
+        const items = suggestionsList.querySelectorAll('.autocomplete-item');
+        
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+            updateHighlight(items, selectedIndex);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            selectedIndex = Math.max(selectedIndex - 1, -1);
+            updateHighlight(items, selectedIndex);
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (selectedIndex >= 0 && selectedIndex < currentFiltered.length) {
+                const customer = currentFiltered[selectedIndex];
+                selectCustomer(inputId, suggestionsId, customer.id, customer.name);
+            }
+        } else if (e.key === 'Escape') {
+            e.preventDefault();
+            suggestionsList.classList.remove('active');
+            selectedIndex = -1;
+        }
+    });
+    
+    input.addEventListener('blur', function() {
+        setTimeout(() => suggestionsList.classList.remove('active'), 200);
+    });
+}
+
+function selectCustomer(inputId, suggestionsId, customerId, customerName) {
+    const input = document.getElementById(inputId);
+    const suggestionsList = document.getElementById(suggestionsId);
+    const idInput = document.getElementById('soCustomerId');
+    
+    input.value = customerName;
+    if (idInput) {
+        idInput.value = customerId;
+    }
     suggestionsList.classList.remove('active');
 }
 

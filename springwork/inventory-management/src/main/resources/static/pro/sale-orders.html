@@ -676,23 +676,12 @@
                             </div>
 
                             <div class="form-group">
-                                <label>Customer Name*</label>
-                                <input type="text" id="soCustomerName" required>
-                            </div>
-
-                            <div class="form-group">
-                                <label>Customer Email</label>
-                                <input type="email" id="soCustomerEmail">
-                            </div>
-
-                            <div class="form-group">
-                                <label>Customer Phone</label>
-                                <input type="tel" id="soCustomerPhone">
-                            </div>
-
-                            <div class="form-group">
-                                <label>Customer Address</label>
-                                <input type="text" id="soCustomerAddress">
+                                <label>Customer*</label>
+                                <div class="autocomplete-container">
+                                    <input type="text" id="soCustomer" class="autocomplete-input" placeholder="Search Customer..." autocomplete="off" required>
+                                    <div id="soCustomerSuggestions" class="autocomplete-suggestions"></div>
+                                    <input type="hidden" id="soCustomerId">
+                                </div>
                             </div>
 
                             <div class="form-group">

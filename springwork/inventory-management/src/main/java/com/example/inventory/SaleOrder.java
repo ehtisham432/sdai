@@ -18,11 +18,11 @@ public class SaleOrder {
     @JoinColumn(name = "user_id", nullable = false)
     private User createdBy;
     
+    @ManyToOne
+    @JoinColumn(name = "customer_id", nullable = false)
+    private Customer customer;
+    
     private String invoiceNumber;
-    private String customerName;
-    private String customerEmail;
-    private String customerPhone;
-    private String customerAddress;
     
     @Temporal(TemporalType.TIMESTAMP)
     private Date saleDate;
@@ -75,44 +75,20 @@ public class SaleOrder {
         this.createdBy = createdBy;
     }
 
+    public Customer getCustomer() {
+        return customer;
+    }
+
+    public void setCustomer(Customer customer) {
+        this.customer = customer;
+    }
+
     public String getInvoiceNumber() {
         return invoiceNumber;
     }
 
     public void setInvoiceNumber(String invoiceNumber) {
         this.invoiceNumber = invoiceNumber;
-    }
-
-    public String getCustomerName() {
-        return customerName;
-    }
-
-    public void setCustomerName(String customerName) {
-        this.customerName = customerName;
-    }
-
-    public String getCustomerEmail() {
-        return customerEmail;
-    }
-
-    public void setCustomerEmail(String customerEmail) {
-        this.customerEmail = customerEmail;
-    }
-
-    public String getCustomerPhone() {
-        return customerPhone;
-    }
-
-    public void setCustomerPhone(String customerPhone) {
-        this.customerPhone = customerPhone;
-    }
-
-    public String getCustomerAddress() {
-        return customerAddress;
-    }
-
-    public void setCustomerAddress(String customerAddress) {
-        this.customerAddress = customerAddress;
     }
 
     public Date getSaleDate() {

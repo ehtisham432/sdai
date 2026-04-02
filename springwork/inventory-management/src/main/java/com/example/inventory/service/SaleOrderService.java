@@ -60,10 +60,7 @@ public class SaleOrderService {
         if (existing.isPresent()) {
             SaleOrder so = existing.get();
             so.setInvoiceNumber(updatedSO.getInvoiceNumber());
-            so.setCustomerName(updatedSO.getCustomerName());
-            so.setCustomerEmail(updatedSO.getCustomerEmail());
-            so.setCustomerPhone(updatedSO.getCustomerPhone());
-            so.setCustomerAddress(updatedSO.getCustomerAddress());
+            so.setCustomer(updatedSO.getCustomer());
             so.setSaleDate(updatedSO.getSaleDate());
             so.setDueDate(updatedSO.getDueDate());
             so.setStatus(updatedSO.getStatus());
