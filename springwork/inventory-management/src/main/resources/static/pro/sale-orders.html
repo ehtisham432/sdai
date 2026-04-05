@@ -511,6 +511,19 @@
             font-size: 16px;
             color: #667eea;
         }
+
+        .header-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .header-section h1 {
+            margin: 0;
+            color: #333;
+            font-size: 20px;
+        }
         </style>
 </head>
 <body>
@@ -546,7 +559,10 @@
         </ol>
     </nav>
     <div class="container">
-        
+        <div class="header-section">
+            <h1><i class="bi bi-receipt"></i> Sales Orders & Invoices</h1>
+            <button class="btn-success" onclick="createNewSaleOrder()"><i class="bi bi-plus-circle"></i> New Sale Order</button>
+        </div>
 
         <div id="alert" class="alert"></div>
 

@@ -18,7 +18,8 @@
         '/product-category.html',
         '/product-types.html',
         '/product-image.html',
-        '/purchase-orders.html'
+        '/purchase-orders.html',
+        '/sale-orders.html'
     ];
     
     // Check if current page is protected
