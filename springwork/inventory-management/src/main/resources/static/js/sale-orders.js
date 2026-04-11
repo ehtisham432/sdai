@@ -353,6 +353,7 @@ function createNewSaleOrder() {
     
     document.getElementById('orderDetailsContainer').style.display = 'none';
     document.getElementById('createFormContainer').style.display = 'block';
+    document.getElementById('itemsSection').style.display = 'block';
     
     document.getElementById('soSaleDate').valueAsDate = new Date();
     
