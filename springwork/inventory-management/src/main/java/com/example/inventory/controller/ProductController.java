@@ -45,6 +45,7 @@ public class ProductController {
         public Object productType;
         public Object productCategory;
         public String titleImageUrl;
+        public Integer availableQuantity;
         public static ProductDTO fromProduct(Product p) {
             ProductDTO dto = new ProductDTO();
             dto.id = p.getId();
@@ -55,6 +56,10 @@ public class ProductController {
             dto.productType = p.getProductType();
             dto.productCategory = p.getProductCategory();
             dto.titleImageUrl = (p.getTitleImage() != null) ? p.getTitleImage().getUrl() : null;
+            // Calculate total available quantity from all inventories
+            dto.availableQuantity = (p.getInventories() != null) 
+                ? p.getInventories().stream().mapToInt(inv -> inv.getQuantity()).sum() 
+                : 0;
             return dto;
         }
     }

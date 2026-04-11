@@ -406,7 +406,8 @@ function addItemToSOForm() {
         quantity: quantity,
         unitPrice: unitPrice,
         discount: discount,
-        subtotal: (quantity * unitPrice) - discount
+        subtotal: (quantity * unitPrice) - discount,
+        availableQuantity: product.availableQuantity || 0
     });
     
     updateItemsTable();
@@ -424,6 +425,7 @@ function updateItemsTable() {
     tbody.innerHTML = formItems.map((item, index) => `
         <tr>
             <td>${item.product.name}</td>
+            <td>${item.availableQuantity || 0}</td>
             <td>${item.quantity}</td>
             <td>$${item.unitPrice.toFixed(2)}</td>
             <td>$${item.discount.toFixed(2)}</td>
@@ -608,9 +610,13 @@ async function viewSaleOrder(id) {
         
         // Populate items table
         const itemsTableBody = document.getElementById('detailsItemsTable');
-        itemsTableBody.innerHTML = (currentViewingSO.items || []).map(item => `
+        itemsTableBody.innerHTML = (currentViewingSO.items || []).map(item => {
+            const productData = window.allProducts.find(p => p.id === item.product.id);
+            const availableQty = productData ? (productData.availableQuantity || 0) : 0;
+            return `
             <tr>
                 <td>${item.product.name}</td>
+                <td>${availableQty}</td>
                 <td>${item.quantity}</td>
                 <td>$${item.unitPrice.toFixed(2)}</td>
                 <td>$${item.subtotal.toFixed(2)}</td>
@@ -621,7 +627,8 @@ async function viewSaleOrder(id) {
                     </div>
                 </td>
             </tr>
-        `).join('');
+        `;
+        }).join('');
         
         // Show/hide buttons based on status
         const editSOBtn = document.getElementById('editSOBtn');
