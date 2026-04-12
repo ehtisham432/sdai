@@ -178,9 +178,9 @@ public class SaleOrderController {
 
     // Complete a sale order (reduce inventory and mark as completed)
     @PostMapping("/{id}/complete")
-    public ResponseEntity<?> completeSaleOrder(@PathVariable Long id) {
+    public ResponseEntity<?> completeSaleOrder(@PathVariable Long id, @RequestParam(required = false, defaultValue = "false") boolean allowNegativeStock) {
         try {
-            if (saleOrderService.completeSaleOrder(id)) {
+            if (saleOrderService.completeSaleOrder(id, allowNegativeStock)) {
                 Optional<SaleOrder> so = saleOrderService.getSaleOrderById(id);
                 if (so.isPresent()) {
                     return ResponseEntity.ok(SaleOrderDTO.fromSaleOrder(so.get()));

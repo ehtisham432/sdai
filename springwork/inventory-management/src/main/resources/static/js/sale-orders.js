@@ -3,6 +3,8 @@ let allSaleOrders = [];
 let searchResults = [];
 let currentEditingSO = null;
 let currentViewingSO = null;
+let pendingSOCompletion = null;
+let stockValidationResult = null;
 let formItems = [];
 let allCustomers = [];
 let counterSaleCustomer = null;
@@ -773,16 +775,178 @@ async function deleteSaleOrder() {
 // Complete sale order (reduce inventory)
 async function completeSaleOrder() {
     if (!currentViewingSO) return;
-    if (!confirm('Complete this sale order? This will reduce inventory.')) return;
+    
+    // Validate stock before completing
+    const validation = validateStockAvailability(currentViewingSO);
+    
+    if (validation.hasIssues) {
+        stockValidationResult = validation;
+        pendingSOCompletion = currentViewingSO.id;
+        showStockValidationModal(validation);
+    } else {
+        if (confirm('Complete this sale order? This will reduce inventory.')) {
+            await proceedWithCompletion(currentViewingSO.id, false);
+        }
+    }
+}
+
+// Validate stock availability for sale order items
+function validateStockAvailability(so) {
+    const result = {
+        hasIssues: false,
+        insufficientItems: []
+    };
+    
+    if (!so.items || so.items.length === 0) return result;
+    
+    so.items.forEach(item => {
+        const productData = window.allProducts.find(p => p.id === item.product.id);
+        const availableQty = productData ? (productData.availableQuantity || 0) : 0;
+        
+        if (availableQty < item.quantity) {
+            result.hasIssues = true;
+            result.insufficientItems.push({
+                productId: item.product.id,
+                productName: item.product.name,
+                available: availableQty,
+                ordered: item.quantity,
+                shortage: item.quantity - availableQty
+            });
+        }
+    });
+    
+    return result;
+}
+
+// Show stock validation modal
+function showStockValidationModal(validation) {
+    const modal = document.getElementById('stockValidationModal');
+    const contentDiv = document.getElementById('stockWarningContent');
+    const table = document.getElementById('stockWarningTable');
+    
+    // Build warning message
+    let message = `<p><strong>The following products have insufficient stock:</strong></p>`;
+    message += `<p style="margin: 10px 0; padding: 10px; background: #ffe6e6; border-radius: 5px; border-left: 4px solid #d9534f;">
+        You have ordered more items than available in stock. Please choose an option below:
+    </p>`;
+    
+    contentDiv.innerHTML = message;
+    
+    // Build table rows
+    table.innerHTML = validation.insufficientItems.map(item => `
+        <tr style="border-bottom: 1px solid #ddd;">
+            <td style="padding: 8px;">${item.productName}</td>
+            <td style="padding: 8px; text-align: center; color: #666;">${item.available}</td>
+            <td style="padding: 8px; text-align: center; color: #d9534f; font-weight: bold;">${item.ordered}</td>
+            <td style="padding: 8px; text-align: center;">
+                <span style="background: #ffe6e6; color: #d9534f; padding: 3px 8px; border-radius: 3px; font-size: 12px; font-weight: bold;">Short by ${item.shortage}</span>
+            </td>
+        </tr>
+    `).join('');
+    
+    modal.style.display = 'flex';
+}
+
+// Complete sale order allowing negative stock
+async function completeWithNegativeStock() {
+    const modal = document.getElementById('stockValidationModal');
+    modal.style.display = 'none';
+    
+    if (pendingSOCompletion) {
+        await proceedWithCompletion(pendingSOCompletion, true);
+    }
+}
+
+// Adjust quantities to available stock and complete
+async function adjustQuantitiesToAvailable() {
+    if (!currentViewingSO || !stockValidationResult) return;
     
     try {
-        const response = await fetch(`/sale-orders/${currentViewingSO.id}/complete`, {
+        // Create updated items with quantities adjusted to available stock
+        const updatedItems = currentViewingSO.items.map(item => {
+            const productData = window.allProducts.find(p => p.id === item.product.id);
+            const availableQty = productData ? (productData.availableQuantity || 0) : 0;
+            
+            return {
+                id: item.id,
+                productId: item.product.id,
+                quantity: Math.min(item.quantity, availableQty),
+                originalQuantity: item.quantity
+            };
+        });
+        
+        // Show adjustments summary
+        const adjustments = updatedItems
+            .filter(item => item.quantity < item.originalQuantity)
+            .map(item => {
+                const product = currentViewingSO.items.find(i => i.id === item.id).product;
+                return `${product.name}: ${item.originalQuantity} → ${item.quantity} units`;
+            });
+        
+        if (adjustments.length > 0) {
+            const msg = 'The following quantities will be adjusted to available stock:\n\n' + 
+                       adjustments.join('\n') + 
+                       '\n\nDo you want to proceed?';
+            if (!confirm(msg)) {
+                document.getElementById('stockValidationModal').style.display = 'none';
+                return;
+            }
+        }
+        
+        // Update each item's quantity
+        for (const updated of updatedItems) {
+            if (updated.quantity < updated.originalQuantity) {
+                const response = await fetch(`/sale-orders/items/${updated.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        product: { id: updated.productId },
+                        quantity: updated.quantity,
+                        unitPrice: currentViewingSO.items.find(i => i.id === updated.id)?.unitPrice || 0,
+                        discount: currentViewingSO.items.find(i => i.id === updated.id)?.discount || 0,
+                        subtotal: (updated.quantity * (currentViewingSO.items.find(i => i.id === updated.id)?.unitPrice || 0)) - 
+                                 (currentViewingSO.items.find(i => i.id === updated.id)?.discount || 0)
+                    })
+                });
+                
+                if (!response.ok) {
+                    showAlert('Error adjusting item quantities', 'error');
+                    return;
+                }
+            }
+        }
+        
+        document.getElementById('stockValidationModal').style.display = 'none';
+        await proceedWithCompletion(pendingSOCompletion, false);
+    } catch (error) {
+        console.error('Error adjusting quantities:', error);
+        showAlert('Error adjusting quantities', 'error');
+    }
+}
+
+// Cancel stock validation
+function cancelStockValidation() {
+    document.getElementById('stockValidationModal').style.display = 'none';
+    pendingSOCompletion = null;
+    stockValidationResult = null;
+}
+
+// Proceed with completion
+async function proceedWithCompletion(soId, allowNegativeStock) {
+    try {
+        const url = allowNegativeStock 
+            ? `/sale-orders/${soId}/complete?allowNegativeStock=true`
+            : `/sale-orders/${soId}/complete`;
+            
+        const response = await fetch(url, {
             method: 'POST'
         });
         
         if (response.ok) {
             showAlert('Sale order completed successfully', 'success');
-            viewSaleOrder(currentViewingSO.id);
+            pendingSOCompletion = null;
+            stockValidationResult = null;
+            viewSaleOrder(soId);
             performSearch();
         } else {
             const error = await response.text();

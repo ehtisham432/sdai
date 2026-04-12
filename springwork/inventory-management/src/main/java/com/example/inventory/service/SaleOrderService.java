@@ -151,6 +151,11 @@ public class SaleOrderService {
 
     // Complete sale order (reduce inventory and mark as completed)
     public boolean completeSaleOrder(Long soId) {
+        return completeSaleOrder(soId, false);
+    }
+    
+    // Complete sale order with optional negative stock allowance
+    public boolean completeSaleOrder(Long soId, boolean allowNegativeStock) {
         Optional<SaleOrder> so = saleOrderRepository.findById(soId);
         if (!so.isPresent()) {
             return false;
@@ -158,14 +163,16 @@ public class SaleOrderService {
 
         SaleOrder saleOrder = so.get();
         
-        // Check if all items have sufficient inventory
-        for (SaleOrderItem item : saleOrder.getItems()) {
-            Optional<Inventory> inventoryOpt = inventoryRepository.findAll().stream()
-                .filter(inv -> inv.getProduct().getId().equals(item.getProduct().getId()))
-                .findFirst();
-            
-            if (!inventoryOpt.isPresent() || inventoryOpt.get().getQuantity() < item.getQuantity()) {
-                return false; // Insufficient inventory
+        // Check if all items have sufficient inventory (unless negative stock is allowed)
+        if (!allowNegativeStock) {
+            for (SaleOrderItem item : saleOrder.getItems()) {
+                Optional<Inventory> inventoryOpt = inventoryRepository.findAll().stream()
+                    .filter(inv -> inv.getProduct().getId().equals(item.getProduct().getId()))
+                    .findFirst();
+                
+                if (!inventoryOpt.isPresent() || inventoryOpt.get().getQuantity() < item.getQuantity()) {
+                    return false; // Insufficient inventory
+                }
             }
         }
 
