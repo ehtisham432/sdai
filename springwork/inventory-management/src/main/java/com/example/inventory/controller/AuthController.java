@@ -65,7 +65,7 @@ public class AuthController {
                         .body(new LoginResponse(false, "Invalid username or password", null, null));
             }
 
-            if(!loginRequest.getPassword().equals(loginRequest.getPassword())) {
+            if(!loginRequest.getPassword().equals(user.getPassword())) {
             	return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(new LoginResponse(false, "Invalid username or password", null, null));
             }
