@@ -12,11 +12,15 @@
         <div class="card mb-4">
             <div class="card-body">
                 <div class="row g-3 align-items-end">
-                    <div class="col-md-6">
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold" for="companyId">Company (Optional)</label>
+                        <select id="companyId" class="form-select"></select>
+                    </div>
+                    <div class="col-md-4">
                         <label class="form-label fw-semibold" for="roleId">Role</label>
                         <select id="roleId" class="form-select"></select>
                     </div>
-                    <div class="col-md-6 d-flex justify-content-end">
+                    <div class="col-md-4 d-flex justify-content-end">
                         <button id="loadBtn" class="btn btn-primary">Load Screens</button>
                     </div>
                 </div>
@@ -35,22 +39,54 @@
     </div>
     <script>
         const roleApi = '/roles';
+        const companyApi = '/companies';
         const groupApi = '/screen-groups';
         const screenApi = '/screens';
         const roleScreenApi = '/role-screens';
 
+        const companySelect = document.getElementById('companyId');
         const roleSelect = document.getElementById('roleId');
         const loadBtn = document.getElementById('loadBtn');
         const screensList = document.getElementById('screensList');
         const groupsContainer = document.getElementById('groupsContainer');
         const assignBtn = document.getElementById('assignBtn');
         const unassignBtn = document.getElementById('unassignBtn');
+        
+        let allRoles = [];
+        let companies = [];
+
+        async function loadCompanies() {
+            const res = await fetch(companyApi);
+            companies = await res.json();
+            companySelect.innerHTML = '<option value="">All Companies (Global Roles)</option>';
+            companies.forEach(c => companySelect.innerHTML += `<option value="${c.id}">${c.name}</option>`);
+        }
 
         async function loadRoles() {
             const res = await fetch(roleApi);
-            const roles = await res.json();
+            allRoles = await res.json();
+            updateRoleSelect();
+        }
+
+        function updateRoleSelect() {
+            const companyId = companySelect.value;
+            let filteredRoles = [];
+            
+            if (!companyId) {
+                // Show only global roles when no company is selected
+                filteredRoles = allRoles.filter(r => !r.company || r.company.id === null);
+            } else {
+                // Show roles for selected company + global roles
+                filteredRoles = allRoles.filter(r => 
+                    !r.company || r.company.id === null || r.company.id === parseInt(companyId)
+                );
+            }
+            
             roleSelect.innerHTML = '<option value="">Select Role</option>';
-            roles.forEach(r => roleSelect.innerHTML += `<option value="${r.id}">${r.name}</option>`);
+            filteredRoles.forEach(r => {
+                const companyInfo = r.company ? ` (${r.company.name})` : ' (Global)';
+                roleSelect.innerHTML += `<option value="${r.id}">${r.name}${companyInfo}</option>`;
+            });
         }
 
         async function loadGroups() {
@@ -104,6 +140,8 @@
             });
         }
 
+        companySelect.addEventListener('change', updateRoleSelect);
+
         loadBtn.addEventListener('click', async () => {
             const roleId = roleSelect.value;
             if (!roleId) { alert('Select a role'); return; }
@@ -135,6 +173,7 @@
             await loadAssigned(roleId);
         });
 
+        loadCompanies();
         loadRoles();
     </script>
 </body>
