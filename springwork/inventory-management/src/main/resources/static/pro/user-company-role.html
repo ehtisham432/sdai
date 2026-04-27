@@ -60,14 +60,72 @@
         const rolesApi = '/roles';
         const ucrForm = document.getElementById('ucrForm');
         const mappingsTable = document.getElementById('mappingsTable');
+        const userSelect = document.getElementById('userId');
+        const companySelect = document.getElementById('companyId');
+        const roleSelect = document.getElementById('roleId');
+        
+        let allUsers = [];
+        let allRoles = [];
+        let companies = [];
 
-        function loadSelects() {
-            fetch(usersApi).then(res => res.json()).then(users => { 
-                const sel = document.getElementById('userId'); sel.innerHTML = '<option value="">Select user</option>';
-                users.forEach(u=> sel.innerHTML += `<option value="${u.id}">${u.username} (${u.loginName||''})</option>`);
+        function loadCompanies() {
+            fetch(companiesApi).then(res => res.json()).then(c => {
+                companies = c;
+                companySelect.innerHTML = '<option value="">Select company</option>';
+                c.forEach(x => companySelect.innerHTML += `<option value="${x.id}">${x.name}</option>`);
             });
-            fetch(companiesApi).then(res => res.json()).then(c=>{ const sel = document.getElementById('companyId'); sel.innerHTML = '<option value="">Select company</option>'; c.forEach(x=> sel.innerHTML += `<option value="${x.id}">${x.name}</option>`); });
-            fetch(rolesApi).then(res => res.json()).then(r=>{ const sel = document.getElementById('roleId'); sel.innerHTML = '<option value="">Select role</option>'; r.forEach(x=> sel.innerHTML += `<option value="${x.id}">${x.name}</option>`); });
+        }
+
+        function loadAllUsers() {
+            fetch(usersApi).then(res => res.json()).then(users => {
+                allUsers = users;
+                updateUserSelect();
+            });
+        }
+
+        function loadAllRoles() {
+            fetch(rolesApi).then(res => res.json()).then(r => {
+                allRoles = r;
+                updateRoleSelect();
+            });
+        }
+
+        function updateUserSelect() {
+            const companyId = companySelect.value;
+            let filteredUsers = [];
+            
+            if (!companyId) {
+                filteredUsers = allUsers;
+            } else {
+                // Filter users that belong to selected company
+                filteredUsers = allUsers.filter(u => 
+                    u.companies && u.companies.some(c => c.id === parseInt(companyId))
+                );
+            }
+            
+            userSelect.innerHTML = '<option value="">Select user</option>';
+            filteredUsers.forEach(u => userSelect.innerHTML += `<option value="${u.id}">${u.username} (${u.loginName || ''})</option>`);
+        }
+
+        function updateRoleSelect() {
+            const companyId = companySelect.value;
+            let filteredRoles = [];
+            
+            if (!companyId) {
+                // Show only global roles
+                filteredRoles = allRoles.filter(r => !r.company || r.company.id === null);
+            } else {
+                // Show company-specific roles + global roles
+                filteredRoles = allRoles.filter(r => 
+                    !r.company || r.company.id === null || r.company.id === parseInt(companyId)
+                );
+            }
+            
+            roleSelect.innerHTML = '<option value="">Select role</option>';
+            filteredRoles.forEach(x => {
+                const companyInfo = x.company ? ` (${x.company.name})` : ' (Global)';
+                roleSelect.innerHTML += `<option value="${x.id}">${x.name}${companyInfo}</option>`;
+            });
         }
 
         function loadMappings() {
@@ -107,13 +165,30 @@
                 .catch(()=>{});
         }
 
-        window.editMapping = function(id) { fetch(`${apiUrl}/${id}`).then(res => res.json()).then(m => { document.getElementById('ucrId').value = m.id; document.getElementById('userId').value = m.user ? m.user.id : ''; document.getElementById('companyId').value = m.company ? m.company.id : ''; document.getElementById('roleId').value = m.role ? m.role.id : ''; }); };
+        window.editMapping = function(id) { 
+            fetch(`${apiUrl}/${id}`).then(res => res.json()).then(m => { 
+                document.getElementById('ucrId').value = m.id; 
+                document.getElementById('companyId').value = m.company ? m.company.id : '';
+                updateUserSelect();
+                updateRoleSelect();
+                document.getElementById('userId').value = m.user ? m.user.id : ''; 
+                document.getElementById('roleId').value = m.role ? m.role.id : ''; 
+            }); 
+        };
+
         window.deleteMapping = function(id) { if (!confirm('Delete role assignment?')) return; fetch(`${apiUrl}/${id}`, {method:'DELETE'}).then(() => loadMappings()); };
 
-        function reset() { ucrForm.reset(); document.getElementById('ucrId').value = ''; }
+        function reset() { ucrForm.reset(); document.getElementById('ucrId').value = ''; companySelect.value = ''; updateUserSelect(); updateRoleSelect(); }
         document.getElementById('resetBtn').onclick = reset;
 
-        loadSelects();
+        companySelect.addEventListener('change', () => {
+            updateUserSelect();
+            updateRoleSelect();
+        });
+
+        loadCompanies();
+        loadAllUsers();
+        loadAllRoles();
         loadMappings();
     </script>
 </body>
