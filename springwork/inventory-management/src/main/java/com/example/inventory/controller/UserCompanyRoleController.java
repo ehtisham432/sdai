@@ -50,13 +50,18 @@ public class UserCompanyRoleController {
 
     @PostMapping
     public ResponseEntity<?> create(@RequestBody AssignPayload p) {
-        if (p.userId == null || p.companyId == null || p.roleId == null) {
-            return ResponseEntity.badRequest().body("userId, companyId and roleId are required");
+        if (p.userId == null || p.roleId == null) {
+            return ResponseEntity.badRequest().body("userId and roleId are required");
         }
         User user = userRepo.findById(p.userId).orElse(null);
         if (user == null) return ResponseEntity.badRequest().body("User not found");
-        Company company = companyRepo.findById(p.companyId).orElse(null);
-        if (company == null) return ResponseEntity.badRequest().body("Company not found");
+        
+        Company company = null;
+        if (p.companyId != null) {
+            company = companyRepo.findById(p.companyId).orElse(null);
+            if (company == null) return ResponseEntity.badRequest().body("Company not found");
+        }
+        
         Role role = roleRepo.findById(p.roleId).orElse(null);
         if (role == null) return ResponseEntity.badRequest().body("Role not found");
 

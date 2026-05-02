@@ -13,8 +13,8 @@ public class UserCompanyRole {
     @JoinColumn(name = "user_id")
     private User user;
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "company_id")
+    @ManyToOne(optional = true)
+    @JoinColumn(name = "company_id", nullable = true)
     private Company company;
 
     @ManyToOne(optional = false)
