@@ -19,7 +19,8 @@
         '/product-types.html',
         '/product-image.html',
         '/purchase-orders.html',
-        '/sale-orders.html'
+        '/sale-orders.html',
+        '/user-company-role.html'
     ];
     
     // Check if current page is protected
