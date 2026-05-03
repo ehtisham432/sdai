@@ -63,10 +63,24 @@
         const resetBtn = document.getElementById('resetBtn');
         const companySelect = document.getElementById('company');
         let companies = [];
+        
+        // Get JWT token from localStorage
+        function getAuthHeader() {
+            const token = localStorage.getItem('jwtToken');
+            return token ? `Bearer ${token}` : null;
+        }
 
         // Load companies
         function loadCompanies() {
-            fetch('/companies').then(res => res.json()).then(data => {
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+            const authHeader = getAuthHeader();
+            if (authHeader) {
+                headers['Authorization'] = authHeader;
+            }
+            
+            fetch('/companies', { headers }).then(res => res.json()).then(data => {
                 companies = Array.isArray(data) ? data : (data.data || []);
                 companySelect.innerHTML = '<option value="">Global Role</option>';
                 companies.forEach(c => {
@@ -118,7 +132,16 @@
             if (companyId) {
                 url += (url.includes('?') ? '&' : '?') + `companyId=${companyId}`;
             }
-            fetch(url, { method, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) })
+            
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+            const authHeader = getAuthHeader();
+            if (authHeader) {
+                headers['Authorization'] = authHeader;
+            }
+            
+            fetch(url, { method, headers, body: JSON.stringify(payload) })
                 .then(async res => {
                     if (!res.ok) { const msg = await res.text(); alert(msg || 'Error'); throw new Error(msg); }
                     return res.json();
@@ -138,7 +161,25 @@
             }); 
         };
 
-        window.deleteRole = function(id) { if (!confirm('Delete this role?')) return; fetch(`${apiUrl}/${id}`, {method:'DELETE'}).then(() => loadRoles()); };
+        window.deleteRole = function(id) { 
+            if (!confirm('Delete this role?')) return;
+            
+            const headers = {};
+            const authHeader = getAuthHeader();
+            if (authHeader) {
+                headers['Authorization'] = authHeader;
+            }
+            
+            fetch(`${apiUrl}/${id}`, {method:'DELETE', headers})
+                .then(res => {
+                    if (!res.ok && res.status === 403) {
+                        alert('Only global users can delete global roles');
+                    } else {
+                        loadRoles();
+                    }
+                })
+                .catch(err => console.error('Error deleting role:', err));
+        };
 
         loadCompanies();
         loadRoles();
