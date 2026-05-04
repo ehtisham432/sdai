@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Types</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">    <script src="/js/auth.js"></script>    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</head>
+<body class="bg-light min-vh-100">
+    <div class="container py-5 px-2">
+        <h1 class="display-5 fw-bold mb-4 text-center">Product Types</h1>
+        <div class="card mb-4">
+            <div class="card-body">
+                <div id="errorMsg" class="d-none mb-3 p-2 rounded bg-danger-subtle text-danger fw-semibold text-center"></div>
+                <form id="typeForm" class="row g-3 w-100 mx-auto">
+                    <input type="hidden" id="typeId">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold" for="name">Name</label>
+                        <input type="text" id="name" class="form-control" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold" for="description">Description</label>
+                        <input type="text" id="description" class="form-control">
+                    </div>
+                    <div class="col-12 d-flex justify-content-end gap-2 mt-2">
+                        <button type="submit" class="btn btn-primary">Save</button>
+                        <button type="button" id="resetBtn" class="btn btn-secondary">Reset</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <h2 class="h5 fw-bold mb-3">Types List</h2>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Description</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="typesTable">
+                            <!-- Product types will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        const apiUrl = '/product-types';
+        const typeForm = document.getElementById('typeForm');
+        const typesTable = document.getElementById('typesTable');
+        const resetBtn = document.getElementById('resetBtn');
+
+        function loadTypes() {
+            fetch(apiUrl)
+                .then(res => res.json())
+                .then(types => {
+                    typesTable.innerHTML = '';
+                    types.forEach(t => {
+                        typesTable.innerHTML += `
+                            <tr>
+                                <td>${t.id}</td>
+                                <td>${t.name}</td>
+                                <td>${t.description || ''}</td>
+                                <td class="d-flex gap-2">
+                                    <button class="btn btn-warning btn-sm text-white" onclick="editType(${t.id})">Edit</button>
+                                    <button class="btn btn-danger btn-sm" onclick="deleteType(${t.id})">Delete</button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                });
+        }
+
+        typeForm.onsubmit = function(e) {
+            e.preventDefault();
+            const id = document.getElementById('typeId').value;
+            const name = document.getElementById('name').value.trim();
+            const description = document.getElementById('description').value.trim();
+            if (!name) return;
+            const payload = { name, description };
+            let method = 'POST';
+            let url = apiUrl;
+            if (id) {
+                method = 'PUT';
+                url += `/${id}`;
+                payload.id = id;
+            }
+            fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(async res => {
+                if (!res.ok) {
+                    const msg = await res.text();
+                    const errorMsg = document.getElementById('errorMsg');
+                    errorMsg.textContent = msg || 'An error occurred';
+                    errorMsg.classList.remove('d-none');
+                    return;
+                }
+                document.getElementById('typeId').value = '';
+                typeForm.reset();
+                loadTypes();
+            });
+        };
+
+        resetBtn.onclick = function() {
+            typeForm.reset();
+            document.getElementById('typeId').value = '';
+            document.getElementById('errorMsg').classList.add('d-none');
+        };
+
+        window.editType = function(id) {
+            fetch(`${apiUrl}/${id}`)
+                .then(res => res.json())
+                .then(t => {
+                    document.getElementById('typeId').value = t.id;
+                    document.getElementById('name').value = t.name;
+                    document.getElementById('description').value = t.description || '';
+                });
+        };
+
+        window.deleteType = function(id) {
+            if (!confirm('Delete this product type?')) return;
+            fetch(`${apiUrl}/${id}`, { method: 'DELETE' })
+                .then(() => loadTypes());
+        };
+
+        loadTypes();
+    </script>
+</body>
+</html>

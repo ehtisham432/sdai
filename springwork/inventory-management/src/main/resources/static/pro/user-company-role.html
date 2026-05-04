@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Company Roles</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="/js/auth.js"></script>   
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</head>
+<body class="bg-light min-vh-100">
+    <div class="container py-5 px-2">
+        <h1 class="display-5 fw-bold mb-4 text-center">User Company Roles</h1>
+        <div class="card mb-4">
+            <div class="card-body">
+                <form id="ucrForm" class="row g-3 w-100 mx-auto">
+                    <input type="hidden" id="ucrId">
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold" for="userId">User</label>
+                        <select id="userId" class="form-select"></select>
+                    </div>
+                    <div class="col-md-4" id="companyDiv">
+                        <label class="form-label fw-semibold" for="companyId">Company (optional for global roles)</label>
+                        <select id="companyId" class="form-select"></select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold" for="roleId">Role</label>
+                        <select id="roleId" class="form-select"></select>
+                    </div>
+                    <div class="col-12 d-flex justify-content-end gap-2 mt-2">
+                        <button type="submit" class="btn btn-primary">Save</button>
+                        <button type="button" id="resetBtn" class="btn btn-secondary">Reset</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <h2 class="h5 fw-bold mb-3">Mappings</h2>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>ID</th>
+                                <th>User</th>
+                                <th>Company</th>
+                                <th>Role</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="mappingsTable"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        const apiUrl = '/user-company-roles';
+        const usersApi = '/users';
+        const companiesApi = '/companies';
+        const rolesApi = '/roles';
+        const ucrForm = document.getElementById('ucrForm');
+        const mappingsTable = document.getElementById('mappingsTable');
+        const userSelect = document.getElementById('userId');
+        const companySelect = document.getElementById('companyId');
+        const roleSelect = document.getElementById('roleId');
+        const companyDiv = document.getElementById('companyDiv');
+        
+        let allUsers = [];
+        let allRoles = [];
+        let companies = [];
+
+        function isGlobalUser(user) {
+            return !user.companies || user.companies.length === 0;
+        }
+
+        function isGlobalRole(role) {
+            return !role.company || role.company.id === null;
+        }
+
+        function loadCompanies() {
+            fetch(companiesApi).then(res => res.json()).then(c => {
+                companies = c;
+                companySelect.innerHTML = '<option value="">Select company (or leave empty for global)</option>';
+                c.forEach(x => companySelect.innerHTML += `<option value="${x.id}">${x.name}</option>`);
+            });
+        }
+
+        function loadAllUsers() {
+            fetch(usersApi).then(res => res.json()).then(users => {
+                allUsers = users;
+                updateUserSelect();
+            });
+        }
+
+        function loadAllRoles() {
+            fetch(rolesApi).then(res => res.json()).then(r => {
+                allRoles = r;
+                updateRoleSelect();
+            });
+        }
+
+        function updateUserSelect() {
+            const companyId = companySelect.value;
+            let filteredUsers = [];
+            
+            if (!companyId) {
+                // When no company is selected, show only global users
+                filteredUsers = allUsers.filter(u => isGlobalUser(u));
+            } else {
+                // Filter users that belong to selected company OR are global
+                filteredUsers = allUsers.filter(u => 
+                    isGlobalUser(u) || (u.companies && u.companies.some(c => c.id === parseInt(companyId)))
+                );
+            }
+            
+            userSelect.innerHTML = '<option value="">Select user</option>';
+            filteredUsers.forEach(u => {
+                const isGlobal = isGlobalUser(u) ? ' (Global)' : '';
+                userSelect.innerHTML += `<option value="${u.id}" data-is-global="${isGlobalUser(u)}">${u.username} (${u.loginName || ''})${isGlobal}</option>`;
+            });
+        }
+
+        function updateRoleSelect() {
+            const companyId = companySelect.value;
+            const userId = userSelect.value;
+            let filteredRoles = [];
+            
+            // If no user selected, show all roles
+            if (!userId) {
+                if (!companyId) {
+                    // No company selected - show only global roles
+                    filteredRoles = allRoles.filter(r => isGlobalRole(r));
+                } else {
+                    // Company selected - show company-specific and global roles
+                    filteredRoles = allRoles.filter(r => 
+                        isGlobalRole(r) || r.company.id === parseInt(companyId)
+                    );
+                }
+            } else {
+                // User is selected - check if they're global
+                const selectedUser = allUsers.find(u => u.id === parseInt(userId));
+                if (isGlobalUser(selectedUser)) {
+                    // Global user can only have global roles
+                    filteredRoles = allRoles.filter(r => isGlobalRole(r));
+                } else {
+                    // Non-global user can have company-specific or global roles
+                    if (!companyId) {
+                        filteredRoles = [];
+                    } else {
+                        filteredRoles = allRoles.filter(r => 
+                            isGlobalRole(r) || r.company.id === parseInt(companyId)
+                        );
+                    }
+                }
+            }
+            
+            roleSelect.innerHTML = '<option value="">Select role</option>';
+            filteredRoles.forEach(x => {
+                const companyInfo = x.company ? ` (${x.company.name})` : ' (Global)';
+                roleSelect.innerHTML += `<option value="${x.id}">${x.name}${companyInfo}</option>`;
+            });
+        }
+
+        function loadMappings() {
+            fetch(apiUrl).then(res => res.json()).then(m => {
+                mappingsTable.innerHTML = '';
+                m.forEach(mm => {
+                    const companyName = mm.company ? mm.company.name : 'Global';
+                    mappingsTable.innerHTML += `
+                        <tr>
+                            <td>${mm.id}</td>
+                            <td>${mm.user ? mm.user.username : ''}</td>
+                            <td>${companyName}</td>
+                            <td>${mm.role ? mm.role.name : ''}</td>
+                            <td class="d-flex gap-2">
+                                <button class="btn btn-warning btn-sm text-white" onclick="editMapping(${mm.id})">Edit</button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteMapping(${mm.id})">Delete</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            });
+        }
+
+        ucrForm.onsubmit = function(e) {
+            e.preventDefault();
+            const id = document.getElementById('ucrId').value;
+            const userId = document.getElementById('userId').value;
+            const companyId = document.getElementById('companyId').value;
+            const roleId = document.getElementById('roleId').value;
+            
+            // Validation: if user is selected, check if they're global
+            const selectedUser = allUsers.find(u => u.id === parseInt(userId));
+            const isGlobal = isGlobalUser(selectedUser);
+            
+            if (!userId || !roleId) return alert('Select user and role');
+            if (!isGlobal && !companyId) return alert('Select company for non-global users');
+            
+            const payload = { 
+                userId: parseInt(userId), 
+                companyId: companyId ? parseInt(companyId) : null, 
+                roleId: parseInt(roleId) 
+            };
+            let method = 'POST';
+            let url = apiUrl;
+            if (id) { method = 'PUT'; url += `/${id}`; }
+            fetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) })
+                .then(async res => { if (!res.ok) { const msg = await res.text(); alert(msg || 'Error'); throw new Error(msg); } return res.json();})
+                .then(() => { ucrForm.reset(); document.getElementById('ucrId').value = ''; loadMappings(); })
+                .catch(()=>{});
+        }
+
+        window.editMapping = function(id) { 
+            fetch(`${apiUrl}/${id}`).then(res => res.json()).then(m => { 
+                document.getElementById('ucrId').value = m.id; 
+                if (m.company) {
+                    document.getElementById('companyId').value = m.company.id;
+                } else {
+                    document.getElementById('companyId').value = '';
+                }
+                updateUserSelect();
+                updateRoleSelect();
+                document.getElementById('userId').value = m.user ? m.user.id : ''; 
+                updateRoleSelect();
+                document.getElementById('roleId').value = m.role ? m.role.id : ''; 
+            }); 
+        };
+
+        window.deleteMapping = function(id) { if (!confirm('Delete role assignment?')) return; fetch(`${apiUrl}/${id}`, {method:'DELETE'}).then(() => loadMappings()); };
+
+        function reset() { ucrForm.reset(); document.getElementById('ucrId').value = ''; companySelect.value = ''; updateUserSelect(); updateRoleSelect(); }
+        document.getElementById('resetBtn').onclick = reset;
+
+        userSelect.addEventListener('change', () => {
+            updateRoleSelect();
+            // Update company visibility based on selected user
+            const selectedUser = allUsers.find(u => u.id === parseInt(userSelect.value));
+            if (selectedUser && isGlobalUser(selectedUser)) {
+                companyDiv.style.display = 'none';
+                companySelect.value = '';
+            } else {
+                companyDiv.style.display = 'block';
+            }
+        });
+
+        companySelect.addEventListener('change', () => {
+            updateUserSelect();
+            updateRoleSelect();
+        });
+
+        loadCompanies();
+        loadAllUsers();
+        loadAllRoles();
+        loadMappings();
+    </script>
+</body>
+</html>
