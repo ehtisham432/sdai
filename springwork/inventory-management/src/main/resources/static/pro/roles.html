@@ -3,186 +3,796 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Roles</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">    
-    <script src="/js/auth.js"></script>    
+    <title>Role Management</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔐</text></svg>">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/auth.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 0;
+        }
+        /* Header Styles */
+        .dashboard-header {
+            background: #ffffff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            padding: 0;
+        }
+        .dashboard-header .navbar { padding: 1rem 0; }
+        .dashboard-header .brand, .dashboard-header .navbar-brand {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #000 !important;
+        }
+        .dashboard-header .navbar-nav .nav-link { color: #666 !important; font-weight: 500; margin: 0 1rem; transition: color 0.3s; }
+        .dashboard-header .navbar-nav .nav-link:hover { color: #000 !important; }
+        .dashboard-header .user-info { display: flex; align-items: center; gap: 1.2rem; }
+        .dashboard-header .user-avatar { width: 40px; height: 40px; border-radius: 50%; background: #e0e7ff; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; font-weight: 700; color: #4f46e5; }
+
+        .container {
+            max-width: 1400px;
+            margin: 30px auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            padding: 30px;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: #48bb78;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #38a169;
+        }
+
+        .btn-danger {
+            background: #f56565;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #e53e3e;
+        }
+
+        .btn-secondary {
+            background: #cbd5e0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #a0aec0;
+        }
+
+        .filters-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .filter-group label {
+            font-weight: 600;
+            color: #555;
+            font-size: 14px;
+        }
+
+        .filter-group input,
+        .filter-group select {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .filter-actions {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .tab-button {
+            padding: 12px 20px;
+            background: transparent;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s ease;
+        }
+
+        .tab-button.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        th {
+            background: #f8f9fa;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #555;
+            border-bottom: 2px solid #ddd;
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        tr:hover {
+            background: #f9f9f9;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-buttons button {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        .form-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            color: #555;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+            grid-column: 1 / -1;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 5px rgba(102, 126, 234, 0.2);
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .details-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .details-item {
+            padding: 15px;
+            background: white;
+            border-radius: 5px;
+            border-left: 4px solid #667eea;
+        }
+
+        .details-item strong {
+            display: block;
+            margin-bottom: 5px;
+            color: #666;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+
+        .details-item-value {
+            font-size: 16px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .details-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+
+        .header-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .header-section h1 {
+            margin: 0;
+            color: #333;
+            font-size: 28px;
+        }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        .alert.success {
+            background: #c6f6d5;
+            color: #22543d;
+            border: 1px solid #9ae6b4;
+        }
+
+        .alert.error {
+            background: #fed7d7;
+            color: #742a2a;
+            border: 1px solid #fc8181;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            .filters-section {
+                grid-template-columns: 1fr;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .details-grid {
+                grid-template-columns: 1fr;
+            }
+
+            table {
+                font-size: 12px;
+            }
+
+            td, th {
+                padding: 8px;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .header-section {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+        }
+    </style>
 </head>
-<body class="bg-light min-vh-100">
-    <div class="container py-5 px-2">
-        <h1 class="display-5 fw-bold mb-4 text-center">Roles</h1>
-        <div class="card mb-4">
-            <div class="card-body">
-                <form id="roleForm" class="row g-3 w-100 mx-auto">
-                    <input type="hidden" id="roleId">
-                    <div class="col-md-4">
-                        <label class="form-label fw-semibold" for="name">Name</label>
-                        <input type="text" id="name" class="form-control" required>
+<body>
+    <div class="dashboard-header">
+        <nav class="navbar navbar-expand-lg navbar-light">
+            <div class="container-fluid px-4">
+                <a class="navbar-brand" href="/pro/roles.html">
+                    <i class="bi bi-shield-lock"></i> Role Management
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMenu" aria-controls="navbarMenu" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarMenu">
+                    <ul class="navbar-nav ms-auto" id="headerMenu"></ul>
+                    <div class="user-info ms-3">
+                        <span id="userName" class="fw-bold"></span>
+                        <span id="userRole" class="text-muted small"></span>
+                        <span id="userAvatar" class="user-avatar">U</span>
                     </div>
-                    <div class="col-md-4">
-                        <label class="form-label fw-semibold" for="description">Description</label>
-                        <input type="text" id="description" class="form-control">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label fw-semibold" for="company">Company (Optional)</label>
-                        <select id="company" class="form-select">
-                            <option value="">Global Role</option>
-                        </select>
-                    </div>
-                    <div class="col-12 d-flex justify-content-end gap-2 mt-2">
-                        <button type="submit" class="btn btn-primary">Save</button>
-                        <button type="button" id="resetBtn" class="btn btn-secondary">Reset</button>
-                    </div>
-                </form>
+                </div>
+            </div>
+        </nav>
+    </div>
+
+    <div class="container">
+        <div class="header-section">
+            <h1><i class="bi bi-shield-lock"></i> Roles</h1>
+            <button class="btn-success" onclick="createNewRole()"><i class="bi bi-plus-circle"></i> Add Role</button>
+        </div>
+
+        <div id="alert" class="alert"></div>
+
+        <div class="tabs">
+            <button class="tab-button active" onclick="switchTab('filters-tab', event)">Search</button>
+            <button class="tab-button" onclick="switchTab('results-tab', event)">Results</button>
+            <button class="tab-button" onclick="switchTab('details-tab', event)">Details / Create</button>
+        </div>
+
+        <!-- Tab 1: Search/Filter -->
+        <div id="filters-tab" class="tab-content active">
+            <div class="filters-section">
+                <div class="filter-group">
+                    <label>Company:</label>
+                    <select id="companyFilter">
+                        <option value="">All Companies</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Role Name:</label>
+                    <input type="text" id="nameFilter" placeholder="Search by name...">
+                </div>
+                <div class="filter-actions">
+                    <button class="btn-primary" onclick="performSearch()">🔍 Search</button>
+                    <button class="btn-secondary" onclick="resetFilters()">↻ Reset</button>
+                </div>
             </div>
         </div>
-        <div class="card">
-            <div class="card-body">
-                <h2 class="h5 fw-bold mb-3">Roles List</h2>
-                <div class="table-responsive">
-                    <table class="table table-bordered table-hover align-middle">
-                        <thead class="table-light">
-                            <tr>
-                                <th>ID</th>
-                                <th>Name</th>
-                                <th>Description</th>
-                                <th>Company</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="rolesTable"></tbody>
-                    </table>
+
+        <!-- Tab 2: Search Results -->
+        <div id="results-tab" class="tab-content">
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Description</th>
+                            <th>Company</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsTableBody">
+                        <tr>
+                            <td colspan="5" class="empty-state">Use Search to find roles</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Tab 3: Details / Create -->
+        <div id="details-tab" class="tab-content">
+            <div id="detailsAlert" class="alert"></div>
+
+            <!-- Role Details View -->
+            <div id="roleDetailsContainer" style="display:none;">
+                <div class="details-section">
+                    <h2 style="margin-bottom: 20px; color: #333;" id="roleDetailsTitle">Role Details</h2>
+                    <div class="details-grid">
+                        <div class="details-item">
+                            <strong>Name</strong>
+                            <div class="details-item-value" id="detailsName">-</div>
+                        </div>
+                        <div class="details-item">
+                            <strong>Company</strong>
+                            <div class="details-item-value" id="detailsCompany">-</div>
+                        </div>
+                        <div class="details-item" style="grid-column: 1 / -1;">
+                            <strong>Description</strong>
+                            <div class="details-item-value" id="detailsDescription">-</div>
+                        </div>
+                    </div>
+                    
+                    <div class="details-actions">
+                        <button type="button" class="btn-secondary" onclick="closeDetailsView()">Close</button>
+                        <button type="button" class="btn-primary" id="editBtn" onclick="editRole()">Edit</button>
+                        <button type="button" class="btn-danger" id="deleteBtn" onclick="deleteCurrentRole()">Delete</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Create/Edit Role Form -->
+            <div id="roleFormContainer">
+                <div class="form-section">
+                    <h2 style="margin-bottom: 20px; color: #333;" id="formTitle">New Role</h2>
+
+                    <form id="roleForm">
+                        <input type="hidden" id="roleId">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Role Name <span style="color:red">*</span></label>
+                                <input type="text" id="roleName" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Company (Optional)</label>
+                                <select id="roleCompany">
+                                    <option value="">Global Role</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Description</label>
+                                <textarea id="roleDescription"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="button" class="btn-secondary" onclick="closeDetailsView()">Cancel</button>
+                            <button type="submit" class="btn-primary">Save Role</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
     </div>
+
     <script>
         const apiUrl = '/roles';
-        const roleForm = document.getElementById('roleForm');
-        const rolesTable = document.getElementById('rolesTable');
-        const resetBtn = document.getElementById('resetBtn');
-        const companySelect = document.getElementById('company');
+        let currentRoleId = null;
+        let allRoles = [];
         let companies = [];
-        
+
         // Get JWT token from localStorage
         function getAuthHeader() {
             const token = localStorage.getItem('jwtToken');
             return token ? `Bearer ${token}` : null;
         }
 
-        // Load companies
-        function loadCompanies() {
-            const headers = {
-                'Content-Type': 'application/json'
-            };
-            const authHeader = getAuthHeader();
-            if (authHeader) {
-                headers['Authorization'] = authHeader;
-            }
+        // Show alert message
+        function showAlert(message, type = 'success', containerId = 'alert') {
+            const alertEl = document.getElementById(containerId);
+            alertEl.textContent = message;
+            alertEl.className = `alert show ${type}`;
+            setTimeout(() => alertEl.classList.remove('show'), 4000);
+        }
+
+        // Switch between tabs
+        function switchTab(tabName, event) {
+            if (event) event.preventDefault();
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
             
-            fetch('/companies', { headers }).then(res => res.json()).then(data => {
-                companies = Array.isArray(data) ? data : (data.data || []);
-                companySelect.innerHTML = '<option value="">Global Role</option>';
-                companies.forEach(c => {
-                    const option = document.createElement('option');
-                    option.value = c.id;
-                    option.textContent = c.name;
-                    companySelect.appendChild(option);
-                });
-            }).catch(err => console.error('Error loading companies:', err));
-        }
-
-        function getCompanyName(companyId) {
-            if (!companyId) return '<span class="badge bg-info">Global</span>';
-            const company = companies.find(c => c.id === companyId);
-            return company ? company.name : 'Unknown';
-        }
-
-        function loadRoles() {
-            fetch(apiUrl).then(res => res.json()).then(roles => {
-                rolesTable.innerHTML = '';
-                roles.forEach(r => {
-                    rolesTable.innerHTML += `
-                        <tr>
-                            <td>${r.id}</td>
-                            <td>${r.name}</td>
-                            <td>${r.description || ''}</td>
-                            <td>${getCompanyName(r.company?.id)}</td>
-                            <td class="d-flex gap-2">
-                                <button class="btn btn-warning btn-sm text-white" onclick="editRole(${r.id})">Edit</button>
-                                <button class="btn btn-danger btn-sm" onclick="deleteRole(${r.id})">Delete</button>
-                            </td>
-                        </tr>
-                    `;
-                })
+            // Find and activate the corresponding button
+            const buttons = document.querySelectorAll('.tab-button');
+            buttons.forEach((btn, index) => {
+                if (tabName === 'filters-tab' && index === 0) btn.classList.add('active');
+                else if (tabName === 'results-tab' && index === 1) btn.classList.add('active');
+                else if (tabName === 'details-tab' && index === 2) btn.classList.add('active');
             });
         }
 
-        roleForm.onsubmit = function(e) {
+        // Load companies dropdown
+        function loadCompanies() {
+            const headers = { 'Content-Type': 'application/json' };
+            const authHeader = getAuthHeader();
+            if (authHeader) headers['Authorization'] = authHeader;
+
+            fetch('/companies', { headers })
+                .then(res => res.json())
+                .then(data => {
+                    companies = Array.isArray(data) ? data : (data.data || []);
+                    const companySelects = ['companyFilter', 'roleCompany'];
+                    companySelects.forEach(id => {
+                        const select = document.getElementById(id);
+                        const currentValue = select.value;
+                        select.innerHTML = '<option value="">Global Role</option>';
+                        companies.forEach(c => {
+                            const option = document.createElement('option');
+                            option.value = c.id;
+                            option.textContent = c.name;
+                            select.appendChild(option);
+                        });
+                        select.value = currentValue;
+                    });
+                    loadRoles();
+                })
+                .catch(err => console.error('Error loading companies:', err));
+        }
+
+        // Get company name by ID
+        function getCompanyName(companyId) {
+            if (!companyId) return '<span class="badge bg-info">Global</span>';
+            const company = companies.find(c => c.id == companyId);
+            return company ? company.name : 'Unknown';
+        }
+
+        // Load all roles
+        function loadRoles() {
+            fetch(apiUrl)
+                .then(res => res.json())
+                .then(roles => {
+                    allRoles = Array.isArray(roles) ? roles : [];
+                })
+                .catch(err => console.error('Error loading roles:', err));
+        }
+
+        // Perform search
+        function performSearch() {
+            const companyId = document.getElementById('companyFilter').value;
+            const nameFilter = document.getElementById('nameFilter').value.toLowerCase();
+
+            let filtered = allRoles.filter(r => {
+                // Show role if:
+                // 1. No company filter is selected (show all) OR
+                // 2. Company filter matches the role's company OR
+                // 3. Role is global (no company) - always show global roles
+                const matchCompany = !companyId || (r.company?.id == companyId) || !r.company;
+                const matchName = !nameFilter || (r.name && r.name.toLowerCase().includes(nameFilter));
+                return matchCompany && matchName;
+            });
+
+            displaySearchResults(filtered);
+            switchTab('results-tab', null);
+        }
+
+        // Display search results in table
+        function displaySearchResults(roles) {
+            const tbody = document.getElementById('resultsTableBody');
+            if (roles.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No roles found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = roles.map(r => `
+                <tr>
+                    <td>${r.id}</td>
+                    <td>${r.name}</td>
+                    <td>${r.description || '-'}</td>
+                    <td>${getCompanyName(r.company?.id)}</td>
+                    <td class="action-buttons">
+                        <button class="btn-primary" onclick="viewRole(${r.id})">View</button>
+                        <button class="btn-danger" onclick="deleteRole(${r.id})">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Reset filters
+        function resetFilters() {
+            document.getElementById('companyFilter').value = '';
+            document.getElementById('nameFilter').value = '';
+            document.getElementById('resultsTableBody').innerHTML = '<tr><td colspan="5" class="empty-state">Use Search to find roles</td></tr>';
+            closeDetailsView();
+        }
+
+        // Create new role
+        function createNewRole() {
+            currentRoleId = null;
+            document.getElementById('roleId').value = '';
+            document.getElementById('roleName').value = '';
+            document.getElementById('roleDescription').value = '';
+            document.getElementById('roleCompany').value = '';
+            document.getElementById('formTitle').textContent = 'New Role';
+            document.getElementById('roleFormContainer').style.display = 'block';
+            document.getElementById('roleDetailsContainer').style.display = 'none';
+            switchTab('details-tab', null);
+        }
+
+        // View role details
+        function viewRole(roleId) {
+            const role = allRoles.find(r => r.id == roleId);
+            if (!role) return;
+
+            currentRoleId = roleId;
+            document.getElementById('detailsName').textContent = role.name;
+            document.getElementById('detailsCompany').innerHTML = getCompanyName(role.company?.id);
+            document.getElementById('detailsDescription').textContent = role.description || '-';
+            document.getElementById('roleDetailsTitle').textContent = role.name;
+
+            document.getElementById('roleFormContainer').style.display = 'none';
+            document.getElementById('roleDetailsContainer').style.display = 'block';
+            switchTab('details-tab', null);
+        }
+
+        // Edit role
+        function editRole() {
+            const role = allRoles.find(r => r.id == currentRoleId);
+            if (!role) return;
+
+            document.getElementById('roleId').value = role.id;
+            document.getElementById('roleName').value = role.name;
+            document.getElementById('roleDescription').value = role.description || '';
+            document.getElementById('roleCompany').value = role.company?.id || '';
+            document.getElementById('formTitle').textContent = 'Edit Role';
+            
+            document.getElementById('roleFormContainer').style.display = 'block';
+            document.getElementById('roleDetailsContainer').style.display = 'none';
+        }
+
+        // Delete current role (from details view)
+        function deleteCurrentRole() {
+            if (!currentRoleId) return;
+            if (!confirm('Are you sure you want to delete this role?')) return;
+            deleteRole(currentRoleId);
+        }
+
+        // Delete role
+        function deleteRole(roleId) {
+            const headers = {};
+            const authHeader = getAuthHeader();
+            if (authHeader) headers['Authorization'] = authHeader;
+
+            fetch(`${apiUrl}/${roleId}`, { method: 'DELETE', headers })
+                .then(res => {
+                    if (!res.ok) {
+                        if (res.status === 403) {
+                            showAlert('Only global users can delete global roles', 'error', 'detailsAlert');
+                        } else {
+                            showAlert('Error deleting role', 'error', 'detailsAlert');
+                        }
+                        return;
+                    }
+                    showAlert('Role deleted successfully', 'success', 'detailsAlert');
+                    loadRoles();
+                    setTimeout(() => {
+                        closeDetailsView();
+                        performSearch();
+                    }, 500);
+                })
+                .catch(err => {
+                    console.error('Error deleting role:', err);
+                    showAlert('Error deleting role', 'error', 'detailsAlert');
+                });
+        }
+
+        // Close details view
+        function closeDetailsView() {
+            currentRoleId = null;
+            document.getElementById('roleFormContainer').style.display = 'block';
+            document.getElementById('roleDetailsContainer').style.display = 'none';
+            document.getElementById('roleForm').reset();
+            document.getElementById('roleId').value = '';
+        }
+
+        // Handle form submission
+        document.getElementById('roleForm').addEventListener('submit', function(e) {
             e.preventDefault();
-            const id = document.getElementById('roleId').value;
-            const name = document.getElementById('name').value.trim();
-            const description = document.getElementById('description').value.trim();
-            const companyId = companySelect.value;
-            if (!name) return;
+
+            const roleId = document.getElementById('roleId').value;
+            const name = document.getElementById('roleName').value.trim();
+            const description = document.getElementById('roleDescription').value.trim();
+            const companyId = document.getElementById('roleCompany').value;
+
+            if (!name) {
+                showAlert('Role name is required', 'error', 'detailsAlert');
+                return;
+            }
+
             const payload = { name, description };
             let method = 'POST';
             let url = apiUrl;
-            if (id) { method = 'PUT'; url += `/${id}`; }
+
+            if (roleId) {
+                method = 'PUT';
+                url += `/${roleId}`;
+            }
+
             if (companyId) {
                 url += (url.includes('?') ? '&' : '?') + `companyId=${companyId}`;
             }
-            
-            const headers = {
-                'Content-Type': 'application/json'
-            };
+
+            const headers = { 'Content-Type': 'application/json' };
             const authHeader = getAuthHeader();
-            if (authHeader) {
-                headers['Authorization'] = authHeader;
-            }
-            
+            if (authHeader) headers['Authorization'] = authHeader;
+
             fetch(url, { method, headers, body: JSON.stringify(payload) })
                 .then(async res => {
-                    if (!res.ok) { const msg = await res.text(); alert(msg || 'Error'); throw new Error(msg); }
-                    return res.json();
-                })
-                .then(() => { roleForm.reset(); document.getElementById('roleId').value=''; companySelect.value=''; loadRoles(); })
-                .catch(() => {});
-        };
-
-        resetBtn.onclick = function() { roleForm.reset(); document.getElementById('roleId').value = ''; companySelect.value=''; };
-
-        window.editRole = function(id) { 
-            fetch(`${apiUrl}/${id}`).then(res => res.json()).then(r => { 
-                document.getElementById('roleId').value = r.id; 
-                document.getElementById('name').value = r.name; 
-                document.getElementById('description').value = r.description || ''; 
-                companySelect.value = r.company?.id || '';
-            }); 
-        };
-
-        window.deleteRole = function(id) { 
-            if (!confirm('Delete this role?')) return;
-            
-            const headers = {};
-            const authHeader = getAuthHeader();
-            if (authHeader) {
-                headers['Authorization'] = authHeader;
-            }
-            
-            fetch(`${apiUrl}/${id}`, {method:'DELETE', headers})
-                .then(res => {
-                    if (!res.ok && res.status === 403) {
-                        alert('Only global users can delete global roles');
-                    } else {
-                        loadRoles();
+                    if (!res.ok) {
+                        const msg = await res.text();
+                        showAlert(msg || 'Error saving role', 'error', 'detailsAlert');
+                        return;
                     }
+                    showAlert(`Role ${roleId ? 'updated' : 'created'} successfully`, 'success', 'detailsAlert');
+                    document.getElementById('roleForm').reset();
+                    document.getElementById('roleId').value = '';
+                    loadRoles();
+                    setTimeout(() => {
+                        closeDetailsView();
+                        resetFilters();
+                    }, 500);
                 })
-                .catch(err => console.error('Error deleting role:', err));
-        };
+                .catch(err => {
+                    console.error('Error saving role:', err);
+                    showAlert('Error saving role', 'error', 'detailsAlert');
+                });
+        });
 
+        // Initialize
         loadCompanies();
-        loadRoles();
     </script>
 </body>
 </html>
