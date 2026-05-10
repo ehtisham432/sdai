@@ -11,15 +11,16 @@ document.addEventListener('DOMContentLoaded', function() {
     loadCompanies();
 });
 
-// Load header menu from screens with display type D or HD
+// Load header menu from screens with display type D or HD and user company role
 async function loadHeaderMenu() {
     try {
+        // Extract roleId from JWT (client side)
         let roleId = null;
         const token = localStorage.getItem('jwtToken') || (JSON.parse(localStorage.getItem('loginResponse')||'{}').token || '');
         if (token) {
             try {
                 const payload = JSON.parse(atob(token.split('.')[1]));
-                roleId = payload.roleId;
+                if (payload.roleId) roleId = payload.roleId;
             } catch {}
         }
         let url = '/api/dashboard/load';
@@ -30,55 +31,88 @@ async function loadHeaderMenu() {
         let screens = [];
         let userRoleId = roleId;
         let res = await fetch(url);
+        
         if (res.ok) {
             const result = await res.json();
             if (result.success && result.data) {
                 dashboardData = result.data;
-                screens = result.data.screens || [];
+                // Try to get roleScreens from dashboardData
+                if (dashboardData.roleScreens && Array.isArray(dashboardData.roleScreens)) {
+                    screens = dashboardData.roleScreens;
+                } else if (dashboardData.screens && Array.isArray(dashboardData.screens)) {
+                    screens = dashboardData.screens;
+                }
             }
         }
         if (!screens.length) {
+            // fallback to /api/dashboard/screens (legacy)
             let fallbackRes = await fetch('/api/dashboard/screens');
             if (fallbackRes.ok) {
-                screens = await fallbackRes.json();
+                const fallbackResult = await fallbackRes.json();
+                if (fallbackResult.success && Array.isArray(fallbackResult.data)) {
+                    screens = fallbackResult.data;
+                }
             }
         }
+        //alert(' screen length '+screens.length);
         if (!screens.length) {
+            // fallback to /screens (public, if available)
             let fallbackRes = await fetch('/screens');
             screens = await fallbackRes.json();
         }
+
+        // Filter screens with display type D or HD
         let headerScreens = screens.filter(s =>
             s.displayType && (s.displayType.name === 'D' || s.displayType.name === 'HD' || s.displayType === 'D' || s.displayType === 'HD')
         );
+
+        // If roleId is available and screens have roles, filter by user role
         if (userRoleId) {
             headerScreens = headerScreens.filter(s => {
-                if (!s.roleScreens) return false;
-                return s.roleScreens.some(rs => rs.role && rs.role.id === userRoleId);
+                if (!s.roles) return true;
+                if (Array.isArray(s.roles)) {
+                    return s.roles.includes(userRoleId) || s.roles.some(r => r.id === userRoleId);
+                }
+                return true;
             });
         }
+
+        // Render menu in header
         let navMenu = document.getElementById('headerMenu');
         if (navMenu) {
             navMenu.innerHTML = '';
         }
+
+        // Group screens by group (group.id or 'nogroup')
         const groups = new Map();
         headerScreens.forEach(s => {
             const grp = s.group ? `${s.group.id}::${s.group.name}` : 'nogroup::';
             if (!groups.has(grp)) groups.set(grp, []);
             groups.get(grp).push(s);
         });
+
+        // Render groups: grouped menus become dropdowns; 'nogroup' items are top-level links
         for (const [grpKey, items] of groups) {
             if (grpKey === 'nogroup::') {
+                // render each ungrouped screen as top-level link
                 items.forEach(screen => {
                     const li = document.createElement('li');
                     li.className = 'nav-item';
-                    li.innerHTML = `<a class="nav-link" href="${screen.href || '#'}">${screen.screenName || screen.name}</a>`;
+                    const link = document.createElement('a');
+                    link.className = 'nav-link';
+                    link.href = screen.path || '#';
+                    link.textContent = screen.name;
+                    li.appendChild(link);
                     navMenu.appendChild(li);
                 });
                 continue;
             }
+
+            // groupKey is "id::name"
             const [gid, gname] = grpKey.split('::');
             const li = document.createElement('li');
             li.className = 'nav-item dropdown';
+
             const toggleId = `menuGroup${gid}`;
             const anchor = document.createElement('a');
             anchor.className = 'nav-link dropdown-toggle';
@@ -88,24 +122,32 @@ async function loadHeaderMenu() {
             anchor.setAttribute('data-bs-toggle', 'dropdown');
             anchor.setAttribute('aria-expanded', 'false');
             anchor.textContent = gname;
+
             const ul = document.createElement('ul');
             ul.className = 'dropdown-menu';
             ul.setAttribute('aria-labelledby', toggleId);
+
             items.forEach(screen => {
+                const itemLi = document.createElement('li');
                 const a = document.createElement('a');
                 a.className = 'dropdown-item';
-                a.href = screen.href || '#';
-                a.textContent = screen.screenName || screen.name;
-                ul.appendChild(a);
+                a.href = screen.path || '#';
+                a.textContent = screen.name;
+                itemLi.appendChild(a);
+                ul.appendChild(itemLi);
             });
+
             li.appendChild(anchor);
             li.appendChild(ul);
             navMenu.appendChild(li);
         }
+
+        // Add logout link at the end
         const logoutLi = document.createElement('li');
         logoutLi.className = 'nav-item';
         logoutLi.innerHTML = `<a class="nav-link" href="#" id="headerLogout"><i class="bi bi-box-arrow-right"></i> Logout</a>`;
         navMenu.appendChild(logoutLi);
+        // Attach logout event
         const headerLogout = document.getElementById('headerLogout');
         if (headerLogout) {
             headerLogout.addEventListener('click', function(e) {
@@ -113,6 +155,7 @@ async function loadHeaderMenu() {
                 logout();
             });
         }
+
     } catch (error) {
         console.error('Error loading header menu:', error);
     }
