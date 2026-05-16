@@ -10,13 +10,40 @@ const companySelect = document.getElementById('companyId');
 const roleSelect = document.getElementById('roleId');
 const loadBtn = document.getElementById('loadBtn');
 const screensList = document.getElementById('screensList');
+const emptyDetails = document.getElementById('emptyDetails');
 const groupsContainer = document.getElementById('groupsContainer');
 const assignBtn = document.getElementById('assignBtn');
 const unassignBtn = document.getElementById('unassignBtn');
 const alertEl = document.getElementById('alert');
+const resultsTableBody = document.getElementById('resultsTableBody');
 
 let allRoles = [];
 let companies = [];
+let currentSelectedRoleId = null;
+
+// Switch between tabs
+function switchTab(tabId, event) {
+    event.preventDefault();
+    
+    // Hide all tab contents
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    // Remove active class from all tab buttons
+    document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Show selected tab
+    const selectedTab = document.getElementById(tabId);
+    if (selectedTab) {
+        selectedTab.classList.add('active');
+    }
+    
+    // Add active class to clicked button
+    event.target.classList.add('active');
+}
 
 // Load header menu from screens with display type D or HD and user company role
 async function loadHeaderMenu() {
@@ -329,18 +356,102 @@ async function loadAssigned(roleId) {
 companySelect.addEventListener('change', updateRoleSelect);
 
 loadBtn.addEventListener('click', async () => {
+    const companyId = companySelect.value;
     const roleId = roleSelect.value;
+    
     if (!roleId) {
         showAlert('Please select a role', 'error');
         return;
     }
-    screensList.style.display = 'block';
-    await loadGroups();
-    await loadAssigned(roleId);
+    
+    // Filter roles based on search criteria
+    let filteredRoles = allRoles;
+    if (companyId) {
+        filteredRoles = filteredRoles.filter(r => 
+            r.company && r.company.id === parseInt(companyId)
+        );
+    } else {
+        filteredRoles = filteredRoles.filter(r => !r.company || r.company.id === null);
+    }
+    
+    // Filter by selected role
+    filteredRoles = filteredRoles.filter(r => r.id === parseInt(roleId));
+    
+    // Display results in table
+    displayResults(filteredRoles);
+    
+    // Switch to results tab
+    switchToTab('results-tab');
 });
 
+// Display results in table
+function displayResults(roles) {
+    resultsTableBody.innerHTML = '';
+    
+    if (roles.length === 0) {
+        resultsTableBody.innerHTML = '<tr><td colspan="3" class="empty-state">No roles found</td></tr>';
+        return;
+    }
+    
+    roles.forEach(role => {
+        const companyName = role.company ? role.company.name : 'Global';
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${companyName}</td>
+            <td>${role.name}</td>
+            <td>
+                <div class="action-buttons">
+                    <button class="btn-primary" style="padding: 6px 12px; font-size: 12px;" onclick="editRole(${role.id}, '${role.name}', '${companyName}')">Edit Screens</button>
+                </div>
+            </td>
+        `;
+        resultsTableBody.appendChild(row);
+    });
+}
+
+// Switch to a specific tab
+function switchToTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    const selectedTab = document.getElementById(tabId);
+    if (selectedTab) {
+        selectedTab.classList.add('active');
+    }
+    
+    const tabName = tabId.replace('-tab', '').charAt(0).toUpperCase() + tabId.replace('-tab', '').slice(1);
+    const buttons = Array.from(document.querySelectorAll('.tab-button'));
+    const button = buttons.find(btn => btn.textContent.includes(tabName) || btn.textContent.trim() === tabName.charAt(0).toUpperCase() + tabName.slice(1));
+    if (button) button.classList.add('active');
+}
+
+// Edit role - load screens for assignment
+async function editRole(roleId, roleName, companyName) {
+    currentSelectedRoleId = roleId;
+    document.getElementById('detailsTitle').textContent = `Assign Screens - ${roleName} (${companyName})`;
+    screensList.style.display = 'block';
+    emptyDetails.style.display = 'none';
+    
+    await loadGroups();
+    await loadAssigned(roleId);
+    
+    switchToTab('details-tab');
+}
+
+// Close details view
+function closeDetails() {
+    screensList.style.display = 'none';
+    emptyDetails.style.display = 'block';
+    currentSelectedRoleId = null;
+    switchToTab('results-tab');
+}
+
 assignBtn.addEventListener('click', async () => {
-    const roleId = roleSelect.value;
+    const roleId = currentSelectedRoleId;
     if (!roleId) {
         showAlert('Please select a role', 'error');
         return;
@@ -370,7 +481,7 @@ assignBtn.addEventListener('click', async () => {
 });
 
 unassignBtn.addEventListener('click', async () => {
-    const roleId = roleSelect.value;
+    const roleId = currentSelectedRoleId;
     if (!roleId) {
         showAlert('Please select a role', 'error');
         return;

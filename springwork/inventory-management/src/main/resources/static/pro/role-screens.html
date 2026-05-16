@@ -83,6 +83,70 @@
         .header-section { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
         .header-section h1 { margin: 0; color: #333; font-size: 28px; }
         .form-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        .tab-button {
+            padding: 12px 20px;
+            background: transparent;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s ease;
+        }
+        .tab-button.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+        .table-responsive {
+            overflow-x: auto;
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        th {
+            background: #f8f9fa;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #555;
+            border-bottom: 2px solid #ddd;
+        }
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+        }
+        tr:hover {
+            background: #f9f9f9;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+        .action-buttons button {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
         @media (max-width: 768px) {
             .container { padding: 20px; }
             .filters-section { grid-template-columns: 1fr; }
@@ -121,30 +185,66 @@
 
         <div id="alert" class="alert"></div>
 
-        <div class="form-section">
-            <div class="filters-section">
-                <div class="filter-group">
-                    <label>Company:</label>
-                    <select id="companyId">
-                        <option value="">All Companies (Global Roles)</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label>Role:</label>
-                    <select id="roleId"></select>
-                </div>
-                <div class="filter-actions">
-                    <button id="loadBtn" class="btn-primary">Load Screens</button>
+        <div class="tabs">
+            <button class="tab-button active" onclick="switchTab('search-tab', event)">Search</button>
+            <button class="tab-button" onclick="switchTab('results-tab', event)">Results</button>
+            <button class="tab-button" onclick="switchTab('details-tab', event)">Details</button>
+        </div>
+
+        <!-- Tab 1: Search/Filter -->
+        <div id="search-tab" class="tab-content active">
+            <div class="form-section">
+                <div class="filters-section">
+                    <div class="filter-group">
+                        <label>Company:</label>
+                        <select id="companyId">
+                            <option value="">All Companies (Global Roles)</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Role:</label>
+                        <select id="roleId"></select>
+                    </div>
+                    <div class="filter-actions">
+                        <button id="loadBtn" class="btn-primary">Load Screens</button>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div id="screensList" class="screens-list" style="display:none;">
-            <h3>Screens</h3>
-            <div id="groupsContainer"></div>
-            <div class="form-actions">
-                <button id="unassignBtn" class="btn-danger">Unassign Selected</button>
-                <button id="assignBtn" class="btn-success">Assign Selected</button>
+        <!-- Tab 2: Results -->
+        <div id="results-tab" class="tab-content">
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Company</th>
+                            <th>Role</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsTableBody">
+                        <tr>
+                            <td colspan="3" class="empty-state">Use Search to view results</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Tab 3: Details / Edit Screens -->
+        <div id="details-tab" class="tab-content">
+            <div id="screensList" class="screens-list" style="display:none;">
+                <h3 id="detailsTitle">Assign Screens</h3>
+                <div id="groupsContainer"></div>
+                <div class="form-actions">
+                    <button id="closeDetailsBtn" class="btn-secondary" onclick="closeDetails()">Close</button>
+                    <button id="unassignBtn" class="btn-danger">Unassign Selected</button>
+                    <button id="assignBtn" class="btn-success">Assign Selected</button>
+                </div>
+            </div>
+            <div id="emptyDetails" class="empty-state" style="display:block;">
+                Select a role from Results tab to assign screens
             </div>
         </div>
     </div>
