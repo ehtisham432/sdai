@@ -359,13 +359,9 @@ loadBtn.addEventListener('click', async () => {
     const companyId = companySelect.value;
     const roleId = roleSelect.value;
     
-    if (!roleId) {
-        showAlert('Please select a role', 'error');
-        return;
-    }
-    
     // Filter roles based on search criteria
     let filteredRoles = allRoles;
+    
     if (companyId) {
         filteredRoles = filteredRoles.filter(r => 
             r.company && r.company.id === parseInt(companyId)
@@ -374,8 +370,10 @@ loadBtn.addEventListener('click', async () => {
         filteredRoles = filteredRoles.filter(r => !r.company || r.company.id === null);
     }
     
-    // Filter by selected role
-    filteredRoles = filteredRoles.filter(r => r.id === parseInt(roleId));
+    // If role is selected, filter by that role
+    if (roleId) {
+        filteredRoles = filteredRoles.filter(r => r.id === parseInt(roleId));
+    }
     
     // Display results in table
     displayResults(filteredRoles);
