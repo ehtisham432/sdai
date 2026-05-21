@@ -9,7 +9,7 @@ import java.net.URI;
 import java.util.List;
 
 @RestController
-@RequestMapping("/product-categories")
+@RequestMapping("/api/product-categories")
 public class ProductCategoryController {
 
     private final ProductCategoryRepository repo;
@@ -24,6 +24,24 @@ public class ProductCategoryController {
             return repo.findByCompanyId(companyId);
         }
         return repo.findAll();
+    }
+
+    @GetMapping("/company/{companyId}")
+    public List<ProductCategory> getByCompany(@PathVariable Long companyId) {
+        return repo.findByCompanyId(companyId);
+    }
+
+    @GetMapping("/company/{companyId}/search")
+    public List<ProductCategory> searchByCompanyAndName(@PathVariable Long companyId, @RequestParam(value = "search", required = false) String search) {
+        List<ProductCategory> categories = repo.findByCompanyId(companyId);
+        if (search != null && !search.trim().isEmpty()) {
+            String searchLower = search.toLowerCase().trim();
+            return categories.stream()
+                    .filter(c -> c.getName().toLowerCase().contains(searchLower) || 
+                               (c.getDescription() != null && c.getDescription().toLowerCase().contains(searchLower)))
+                    .toList();
+        }
+        return categories;
     }
 
     @GetMapping("/{id}")
@@ -43,7 +61,7 @@ public class ProductCategoryController {
         }
         try {
             ProductCategory saved = repo.save(pc);
-            return ResponseEntity.created(URI.create("/product-categories/" + saved.getId())).body(saved);
+            return ResponseEntity.created(URI.create("/api/product-categories/" + saved.getId())).body(saved);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Error: " + e.getMessage());
         }
