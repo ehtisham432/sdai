@@ -1,7 +1,6 @@
 package com.example.inventory;
 
 import jakarta.persistence.*;
-import java.util.Set;
 
 @Entity
 public class ProductCategory {
@@ -14,9 +13,9 @@ public class ProductCategory {
 
     private String description;
 
-    @ManyToMany(mappedBy = "productCategories")
-    @com.fasterxml.jackson.annotation.JsonIgnore
-    private Set<Company> companies;
+    @ManyToOne
+    @JoinColumn(name = "company_id", nullable = false)
+    private Company company;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -27,6 +26,6 @@ public class ProductCategory {
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
 
-    public Set<Company> getCompanies() { return companies; }
-    public void setCompanies(Set<Company> companies) { this.companies = companies; }
+    public Company getCompany() { return company; }
+    public void setCompany(Company company) { this.company = company; }
 }
