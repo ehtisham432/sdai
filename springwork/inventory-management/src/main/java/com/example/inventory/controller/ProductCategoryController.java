@@ -56,7 +56,14 @@ public class ProductCategoryController {
         if (pc.getName() == null || pc.getName().trim().isEmpty()) {
             return ResponseEntity.badRequest().body("Name is required");
         }
-        if (repo.findAll().stream().anyMatch(c -> c.getName().equalsIgnoreCase(pc.getName().trim()))) {
+        if (pc.getCompany() == null || pc.getCompany().getId() == null) {
+            return ResponseEntity.badRequest().body("Company is required");
+        }
+        
+        // Check if name is unique within this company only
+        Long companyId = pc.getCompany().getId();
+        if (repo.findByCompanyId(companyId).stream()
+                .anyMatch(c -> c.getName().equalsIgnoreCase(pc.getName().trim()))) {
             return ResponseEntity.badRequest().body("Name must be unique");
         }
         try {
@@ -72,9 +79,17 @@ public class ProductCategoryController {
         if (pc.getName() == null || pc.getName().trim().isEmpty()) {
             return ResponseEntity.badRequest().body("Name is required");
         }
-        if (repo.findAll().stream().anyMatch(c -> c.getName().equalsIgnoreCase(pc.getName().trim()) && !c.getId().equals(id))) {
+        if (pc.getCompany() == null || pc.getCompany().getId() == null) {
+            return ResponseEntity.badRequest().body("Company is required");
+        }
+        
+        // Check if name is unique within this company only (excluding current category)
+        Long companyId = pc.getCompany().getId();
+        if (repo.findByCompanyId(companyId).stream()
+                .anyMatch(c -> c.getName().equalsIgnoreCase(pc.getName().trim()) && !c.getId().equals(id))) {
             return ResponseEntity.badRequest().body("Name must be unique");
         }
+        
         return repo.findById(id).map(existing -> {
             existing.setName(pc.getName());
             existing.setDescription(pc.getDescription());
