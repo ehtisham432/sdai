@@ -219,7 +219,8 @@ async function loadCategories() {
             allCategories.forEach(category => {
                 const option = document.createElement('option');
                 option.value = category.id;
-                option.textContent = category.name;
+                const companyName = category.company?.name || 'Unknown';
+                option.textContent = `${category.name} (${companyName})`;
                 select.appendChild(option);
             });
         });
