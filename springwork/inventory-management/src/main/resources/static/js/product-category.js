@@ -341,8 +341,21 @@ function setupFormSubmission() {
                 closeDetailsView();
                 resetFilters();
             } else {
-                const errorData = await response.json();
-                showAlert(errorData.message || 'Error saving category', 'error');
+                let errorMessage = 'Error saving category';
+                const contentType = response.headers.get('content-type');
+                
+                try {
+                    if (contentType && contentType.includes('application/json')) {
+                        const errorData = await response.json();
+                        errorMessage = errorData.message || errorMessage;
+                    } else {
+                        errorMessage = await response.text();
+                    }
+                } catch (parseError) {
+                    console.error('Error parsing response:', parseError);
+                }
+                
+                showAlert(errorMessage, 'error');
             }
         } catch (error) {
             console.error('Error saving category:', error);
