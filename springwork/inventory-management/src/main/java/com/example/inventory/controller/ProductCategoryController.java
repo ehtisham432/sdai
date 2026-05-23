@@ -78,6 +78,7 @@ public class ProductCategoryController {
         return repo.findById(id).map(existing -> {
             existing.setName(pc.getName());
             existing.setDescription(pc.getDescription());
+            existing.setCompany(pc.getCompany());
             repo.save(existing);
             return ResponseEntity.ok(existing);
         }).orElse(ResponseEntity.notFound().build());
