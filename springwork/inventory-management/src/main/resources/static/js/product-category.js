@@ -21,58 +21,106 @@ async function loadHeaderMenu() {
             try {
                 const payload = JSON.parse(atob(token.split('.')[1]));
                 roleId = payload.roleId;
-            } catch {}
+                console.log('Loaded roleId from token:', roleId);
+            } catch (e) {
+                console.warn('Failed to parse token:', e);
+            }
         }
-        let url = '/api/dashboard/load';
-        if (roleId) {
-            url += `?roleId=${encodeURIComponent(roleId)}`;
-        }
-        let dashboardData = null;
+        
         let screens = [];
         let userRoleId = roleId;
-        let res = await fetch(url);
-        if (res.ok) {
-            const result = await res.json();
-            if (result.success && result.data) {
-                dashboardData = result.data;
-                screens = result.data.screens || [];
+        
+        // Try fetching from dashboard load endpoint
+        try {
+            let url = '/api/dashboard/load';
+            if (roleId) {
+                url += `?roleId=${encodeURIComponent(roleId)}`;
+            }
+            console.log('Attempting to load from:', url);
+            let res = await fetch(url);
+            if (res.ok) {
+                const result = await res.json();
+                if (result.success && result.data) {
+                    // Use roleScreens from dashboard service response
+                    screens = result.data.roleScreens || result.data.screens || result.data.menus || [];
+                    console.log('Loaded screens from /api/dashboard/load:', screens.length);
+                } else if (Array.isArray(result)) {
+                    screens = result;
+                    console.log('Loaded screens as array:', screens.length);
+                }
+            }
+        } catch (e) {
+            console.warn('Failed to load from /api/dashboard/load:', e);
+        }
+        
+        // Fallback to dashboard/screens
+        if (!screens.length) {
+            try {
+                console.log('Trying fallback: /api/dashboard/screens');
+                let fallbackRes = await fetch('/api/dashboard/screens');
+                if (fallbackRes.ok) {
+                    screens = await fallbackRes.json();
+                    console.log('Loaded screens from /api/dashboard/screens:', screens.length);
+                }
+            } catch (e) {
+                console.warn('Failed to load from /api/dashboard/screens:', e);
             }
         }
+        
+        // Fallback to screens endpoint
         if (!screens.length) {
-            let fallbackRes = await fetch('/api/dashboard/screens');
-            if (fallbackRes.ok) {
-                screens = await fallbackRes.json();
+            try {
+                console.log('Trying fallback: /screens');
+                let fallbackRes = await fetch('/screens');
+                if (fallbackRes.ok) {
+                    screens = await fallbackRes.json();
+                    console.log('Loaded screens from /screens:', screens.length);
+                }
+            } catch (e) {
+                console.warn('Failed to load from /screens:', e);
             }
         }
-        if (!screens.length) {
-            let fallbackRes = await fetch('/screens');
-            screens = await fallbackRes.json();
-        }
-        let headerScreens = screens.filter(s =>
-            s.displayType && (s.displayType.name === 'D' || s.displayType.name === 'HD' || s.displayType === 'D' || s.displayType === 'HD')
-        );
-        if (userRoleId) {
-            headerScreens = headerScreens.filter(s => {
-                if (!s.roleScreens) return false;
-                return s.roleScreens.some(rs => rs.role && rs.role.id === userRoleId);
-            });
-        }
+        
+        console.log('Total screens loaded:', screens.length, screens);
+        
+        // Filter by display type - the backend returns displayType as a string (e.g., "D", "HD")
+        let headerScreens = screens.filter(s => {
+            if (!s) return false;
+            // displayType could be nested or a string
+            const displayType = (s.displayType && typeof s.displayType === 'object') 
+                ? s.displayType.name || s.displayType 
+                : s.displayType;
+            const isHeaderDisplay = displayType === 'D' || displayType === 'HD';
+            console.log('Screen:', s.name || s.screenName || s.path, 'displayType:', displayType, 'isHeader:', isHeaderDisplay);
+            return isHeaderDisplay;
+        });
+        
+        console.log('Header screens after filter:', headerScreens.length);
+        
+        // No need to filter by role again - backend already did this
+        
         let navMenu = document.getElementById('headerMenu');
         if (navMenu) {
             navMenu.innerHTML = '';
         }
+        
         const groups = new Map();
         headerScreens.forEach(s => {
             const grp = s.group ? `${s.group.id}::${s.group.name}` : 'nogroup::';
             if (!groups.has(grp)) groups.set(grp, []);
             groups.get(grp).push(s);
         });
+        
+        console.log('Screen groups:', Array.from(groups.keys()));
+        
         for (const [grpKey, items] of groups) {
             if (grpKey === 'nogroup::') {
                 items.forEach(screen => {
                     const li = document.createElement('li');
                     li.className = 'nav-item';
-                    li.innerHTML = `<a class="nav-link" href="${screen.href || '#'}">${screen.screenName || screen.name}</a>`;
+                    const href = screen.href || screen.path || '#';
+                    const displayName = screen.screenName || screen.name || 'Menu Item';
+                    li.innerHTML = `<a class="nav-link" href="${href}">${displayName}</a>`;
                     navMenu.appendChild(li);
                 });
                 continue;
@@ -95,14 +143,15 @@ async function loadHeaderMenu() {
             items.forEach(screen => {
                 const a = document.createElement('a');
                 a.className = 'dropdown-item';
-                a.href = screen.href || '#';
-                a.textContent = screen.screenName || screen.name;
+                a.href = screen.href || screen.path || '#';
+                a.textContent = screen.screenName || screen.name || 'Menu Item';
                 ul.appendChild(a);
             });
             li.appendChild(anchor);
             li.appendChild(ul);
             navMenu.appendChild(li);
         }
+        
         const logoutLi = document.createElement('li');
         logoutLi.className = 'nav-item';
         logoutLi.innerHTML = `<a class="nav-link" href="#" id="headerLogout"><i class="bi bi-box-arrow-right"></i> Logout</a>`;
