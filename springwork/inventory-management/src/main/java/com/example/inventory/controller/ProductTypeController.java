@@ -9,7 +9,7 @@ import java.net.URI;
 import java.util.List;
 
 @RestController
-@RequestMapping("/product-types")
+@RequestMapping("/api/product-types")
 public class ProductTypeController {
 
     private final ProductTypeRepository repo;
@@ -21,6 +21,24 @@ public class ProductTypeController {
     @GetMapping
     public List<ProductType> list() {
         return repo.findAll();
+    }
+
+    @GetMapping("/category/{categoryId}")
+    public List<ProductType> getByCategory(@PathVariable Long categoryId) {
+        return repo.findByProductCategoryId(categoryId);
+    }
+
+    @GetMapping("/category/{categoryId}/search")
+    public List<ProductType> searchByCategory(@PathVariable Long categoryId, @RequestParam(value = "search", required = false) String search) {
+        List<ProductType> types = repo.findByProductCategoryId(categoryId);
+        if (search != null && !search.trim().isEmpty()) {
+            String searchLower = search.toLowerCase().trim();
+            return types.stream()
+                    .filter(t -> t.getName().toLowerCase().contains(searchLower) || 
+                               (t.getDescription() != null && t.getDescription().toLowerCase().contains(searchLower)))
+                    .toList();
+        }
+        return types;
     }
 
     @GetMapping("/{id}")
@@ -35,12 +53,19 @@ public class ProductTypeController {
         if (pt.getName() == null || pt.getName().trim().isEmpty()) {
             return ResponseEntity.badRequest().body("Name is required");
         }
-        if (repo.findAll().stream().anyMatch(t -> t.getName().equalsIgnoreCase(pt.getName().trim()))) {
+        if (pt.getProductCategory() == null || pt.getProductCategory().getId() == null) {
+            return ResponseEntity.badRequest().body("Product category is required");
+        }
+        
+        // Check if name is unique within this category only
+        Long categoryId = pt.getProductCategory().getId();
+        if (repo.findByProductCategoryId(categoryId).stream()
+                .anyMatch(t -> t.getName().equalsIgnoreCase(pt.getName().trim()))) {
             return ResponseEntity.badRequest().body("Name must be unique");
         }
         try {
             ProductType saved = repo.save(pt);
-            return ResponseEntity.created(URI.create("/product-types/" + saved.getId())).body(saved);
+            return ResponseEntity.created(URI.create("/api/product-types/" + saved.getId())).body(saved);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Error: " + e.getMessage());
         }
@@ -51,12 +76,21 @@ public class ProductTypeController {
         if (pt.getName() == null || pt.getName().trim().isEmpty()) {
             return ResponseEntity.badRequest().body("Name is required");
         }
-        if (repo.findAll().stream().anyMatch(t -> t.getName().equalsIgnoreCase(pt.getName().trim()) && !t.getId().equals(id))) {
+        if (pt.getProductCategory() == null || pt.getProductCategory().getId() == null) {
+            return ResponseEntity.badRequest().body("Product category is required");
+        }
+        
+        // Check if name is unique within this category only (excluding current type)
+        Long categoryId = pt.getProductCategory().getId();
+        if (repo.findByProductCategoryId(categoryId).stream()
+                .anyMatch(t -> t.getName().equalsIgnoreCase(pt.getName().trim()) && !t.getId().equals(id))) {
             return ResponseEntity.badRequest().body("Name must be unique");
         }
+        
         return repo.findById(id).map(existing -> {
             existing.setName(pt.getName());
             existing.setDescription(pt.getDescription());
+            existing.setProductCategory(pt.getProductCategory());
             repo.save(existing);
             return ResponseEntity.ok(existing);
         }).orElse(ResponseEntity.notFound().build());
