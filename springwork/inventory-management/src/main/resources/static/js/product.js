@@ -283,12 +283,15 @@ function renderSearchResults() {
     const tbody = document.getElementById('resultsTableBody');
     
     if (searchResults.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No products found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No products found</td></tr>';
         return;
     }
 
     tbody.innerHTML = searchResults.map(product => `
         <tr>
+            <td>
+                ${product.titleImageUrl ? `<img src="${product.titleImageUrl}" style="max-width: 60px; max-height: 60px; border-radius: 4px;">` : '<span style="color: #999;">N/A</span>'}
+            </td>
             <td><strong>${product.name}</strong></td>
             <td>${product.description || 'N/A'}</td>
             <td>${product.price || '0.00'}</td>
