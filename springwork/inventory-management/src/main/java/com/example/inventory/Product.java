@@ -5,6 +5,9 @@ import java.util.Set;
 import java.util.List;
 
 @Entity
+@Table(uniqueConstraints = {
+    @UniqueConstraint(columnNames = {"product_category_id", "name"}, name = "uk_product_category_name")
+})
 public class Product {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

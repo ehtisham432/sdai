@@ -69,6 +69,18 @@ public class ProductController {
             @RequestPart("product") Product product,
             @RequestPart(value = "images", required = false) MultipartFile[] images,
             @RequestParam(value = "titleImageIdx", required = false) Integer titleImageIdx) {
+        
+        // Validate: product name must be unique within category
+        if (product.getProductCategory() != null && product.getName() != null) {
+            var existingProducts = productRepository.findByCategoryAndName(
+                product.getProductCategory().getId(), 
+                product.getName()
+            );
+            if (!existingProducts.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body("A product with this name already exists in this category");
+            }
+        }
+        
         // Save images to folder and set URLs
         if (images != null && images.length > 0) {
             java.util.List<ProductImage> productImages = new java.util.ArrayList<>();
@@ -100,6 +112,17 @@ public class ProductController {
     // Support JSON POST requests when no files are uploaded (create product without images)
     @PostMapping(path = "", consumes = "application/json")
     public ResponseEntity<?> createProductJson(@RequestBody Product product) {
+        // Validate: product name must be unique within category
+        if (product.getProductCategory() != null && product.getName() != null) {
+            var existingProducts = productRepository.findByCategoryAndName(
+                product.getProductCategory().getId(), 
+                product.getName()
+            );
+            if (!existingProducts.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body("A product with this name already exists in this category");
+            }
+        }
+        
         // ensure id is null for creation
         product.setId(null);
         Product saved = productRepository.save(product);
@@ -133,6 +156,18 @@ public class ProductController {
             @RequestParam(value = "titleImageIdx", required = false) Integer titleImageIdx,
             @RequestParam(value = "titleImageId", required = false) Long titleImageId,
             @RequestParam(value = "imagesToDelete", required = false) String imagesToDeleteJson) {
+        
+        // Validate: product name must be unique within category (excluding current product)
+        if (product.getProductCategory() != null && product.getName() != null) {
+            var existingProducts = productRepository.findByCategoryAndName(
+                product.getProductCategory().getId(), 
+                product.getName()
+            );
+            if (!existingProducts.isEmpty() && !existingProducts.stream().anyMatch(p -> p.getId().equals(id))) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body("A product with this name already exists in this category");
+            }
+        }
+        
         product.setId(id);
         // parse imagesToDelete JSON if provided
         java.util.Set<Long> imagesToDelete = new java.util.HashSet<>();
@@ -252,6 +287,18 @@ public class ProductController {
             @RequestBody Product product,
             @RequestParam(value = "titleImageId", required = false) Long titleImageId,
             @RequestParam(value = "imagesToDelete", required = false) String imagesToDeleteJson) {
+        
+        // Validate: product name must be unique within category (excluding current product)
+        if (product.getProductCategory() != null && product.getName() != null) {
+            var existingProducts = productRepository.findByCategoryAndName(
+                product.getProductCategory().getId(), 
+                product.getName()
+            );
+            if (!existingProducts.isEmpty() && !existingProducts.stream().anyMatch(p -> p.getId().equals(id))) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body("A product with this name already exists in this category");
+            }
+        }
+        
         product.setId(id);
         // parse imagesToDelete if present
         java.util.Set<Long> imagesToDelete = new java.util.HashSet<>();

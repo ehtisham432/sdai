@@ -385,7 +385,7 @@ function setupFormSubmission() {
         const categoryId = document.getElementById('productCategory').value;
         const typeId = document.getElementById('productType').value;
         
-        if (!companyId || !name || !price) {
+        if (!companyId || !name || !price || !categoryId) {
             showAlert('Please fill all required fields', 'error');
             return;
         }
