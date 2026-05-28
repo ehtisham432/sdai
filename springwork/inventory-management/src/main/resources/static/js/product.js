@@ -257,6 +257,64 @@ async function loadTypes(categoryId) {
     }
 }
 
+// Load product categories for search filter based on selected company
+async function loadCategoriesForFilter(companyId) {
+    try {
+        const categoryFilter = document.getElementById('categoryFilter');
+        while (categoryFilter.firstChild) categoryFilter.removeChild(categoryFilter.firstChild);
+        
+        const optionPlaceholder = document.createElement('option');
+        optionPlaceholder.value = '';
+        optionPlaceholder.textContent = 'All Categories';
+        categoryFilter.appendChild(optionPlaceholder);
+
+        if (!companyId) {
+            return;
+        }
+
+        const response = await fetch(`/api/product-categories/company/${companyId}`);
+        const categories = await response.json();
+        
+        categories.forEach(category => {
+            const option = document.createElement('option');
+            option.value = category.id;
+            option.textContent = category.name;
+            categoryFilter.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Error loading categories for filter:', error);
+    }
+}
+
+// Load product types for search filter based on selected category
+async function loadTypesForFilter(categoryId) {
+    try {
+        const typeFilter = document.getElementById('productTypeFilter');
+        while (typeFilter.firstChild) typeFilter.removeChild(typeFilter.firstChild);
+        
+        const optionPlaceholder = document.createElement('option');
+        optionPlaceholder.value = '';
+        optionPlaceholder.textContent = 'All Types';
+        typeFilter.appendChild(optionPlaceholder);
+
+        if (!categoryId) {
+            return;
+        }
+
+        const response = await fetch(`/api/product-types/category/${categoryId}`);
+        const types = await response.json();
+        
+        types.forEach(type => {
+            const option = document.createElement('option');
+            option.value = type.id;
+            option.textContent = type.name;
+            typeFilter.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Error loading types for filter:', error);
+    }
+}
+
 // Perform search with filters
 async function performSearch() {
     try {
@@ -268,7 +326,16 @@ async function performSearch() {
             return;
         }
 
-        const response = await fetch(`/api/products?companyId=${companyId}`);
+        const categoryId = document.getElementById('categoryFilter').value;
+        const productTypeId = document.getElementById('productTypeFilter').value;
+        const name = document.getElementById('nameFilter').value;
+        
+        let url = `/api/products?companyId=${companyId}`;
+        if (categoryId) url += `&categoryId=${categoryId}`;
+        if (productTypeId) url += `&productTypeId=${productTypeId}`;
+        if (name) url += `&name=${encodeURIComponent(name)}`;
+        
+        const response = await fetch(url);
         searchResults = await response.json();
         renderSearchResults();
         switchTab('results-tab', null);
@@ -309,7 +376,14 @@ function resetFilters() {
     const companyFilter = document.getElementById('companyFilter');
     if (userCompanyId && companyFilter) {
         companyFilter.value = userCompanyId;
+    } else if (companyFilter) {
+        companyFilter.value = '';
     }
+    
+    document.getElementById('categoryFilter').value = '';
+    document.getElementById('productTypeFilter').value = '';
+    document.getElementById('nameFilter').value = '';
+    
     searchResults = [];
     renderSearchResults();
     closeDetailsView();
@@ -620,6 +694,7 @@ function setupImageHandling() {
     const imagePreview = document.getElementById('imagePreview');
     const titleImageSelection = document.getElementById('titleImageSelection');
     
+    // Event listeners for form dropdowns
     document.getElementById('productCompany').addEventListener('change', function() {
         loadCategories(this.value);
         document.getElementById('productCategory').value = '';
@@ -629,6 +704,18 @@ function setupImageHandling() {
     document.getElementById('productCategory').addEventListener('change', function() {
         loadTypes(this.value);
         document.getElementById('productType').value = '';
+    });
+    
+    // Event listeners for search filters
+    document.getElementById('companyFilter').addEventListener('change', function() {
+        loadCategoriesForFilter(this.value);
+        document.getElementById('categoryFilter').value = '';
+        document.getElementById('productTypeFilter').value = '';
+    });
+    
+    document.getElementById('categoryFilter').addEventListener('change', function() {
+        loadTypesForFilter(this.value);
+        document.getElementById('productTypeFilter').value = '';
     });
     
     imagesInput.addEventListener('change', () => {

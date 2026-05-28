@@ -26,13 +26,38 @@ public class ProductController {
     private ProductImageRepository productImageRepository;
 
     @GetMapping
-    public List<ProductDTO> getAllProducts(@RequestParam(required = false) Long companyId) {
+    public List<ProductDTO> getAllProducts(
+            @RequestParam(required = false) Long companyId,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) Long productTypeId,
+            @RequestParam(required = false) String name) {
         List<Product> products = productRepository.findAll();
+        
         if (companyId != null) {
             products = products.stream()
                 .filter(p -> p.getCompany() != null && p.getCompany().getId().equals(companyId))
                 .toList();
         }
+        
+        if (categoryId != null) {
+            products = products.stream()
+                .filter(p -> p.getProductCategory() != null && p.getProductCategory().getId().equals(categoryId))
+                .toList();
+        }
+        
+        if (productTypeId != null) {
+            products = products.stream()
+                .filter(p -> p.getProductType() != null && p.getProductType().getId().equals(productTypeId))
+                .toList();
+        }
+        
+        if (name != null && !name.isBlank()) {
+            String searchName = name.toLowerCase();
+            products = products.stream()
+                .filter(p -> p.getName() != null && p.getName().toLowerCase().contains(searchName))
+                .toList();
+        }
+        
         return products.stream().map(ProductDTO::fromProduct).toList();
     }
 
