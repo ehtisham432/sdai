@@ -422,7 +422,7 @@
                     <input type="text" id="searchEmail" placeholder="Search by email...">
                 </div>
                 <div class="filter-group">
-                    <label>Company:</label>
+                    <label>Company:<span id="searchCompanyRequiredIndicator" style="color: red; display: none;">*</span></label>
                     <select id="searchCompanyId">
                         <option value="">All Companies</option>
                     </select>
@@ -503,11 +503,11 @@
                             </div>
 
                             <div class="form-group">
-                                <label>Companies</label>
+                                <label>Companies<span id="companyRequiredIndicator" style="color: red; display: none;">*</span></label>
                                 <select id="companyId" multiple>
                                     <option value="">Select companies</option>
                                 </select>
-                                <div class="form-text mt-2">Hold Ctrl/Cmd to select multiple companies.</div>
+                                <div class="form-text mt-2">Hold Ctrl/Cmd to select multiple companies. <span id="companyRequiredText" style="color: red; display: none;">Required for non-global users.</span></div>
                             </div>
                         </div>
 

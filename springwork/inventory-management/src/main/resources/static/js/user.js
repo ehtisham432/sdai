@@ -2,6 +2,7 @@
 let searchResults = [];
 let currentEditingUser = null;
 let currentViewingUser = null;
+let isGlobalUser = false; // Flag to track if current user is global admin
 
 // API endpoints
 const apiUrl = '/users';
@@ -179,6 +180,7 @@ async function loadCompanies() {
         
         // If no companies found, check if user is global admin and load all companies
         if (!companies || companies.length === 0) {
+            isGlobalUser = true; // User is global admin
             try {
                 const response = await fetch(companyApiUrl);
                 if (response.ok) {
@@ -187,6 +189,8 @@ async function loadCompanies() {
             } catch (e) {
                 console.log('Error loading all companies:', e);
             }
+        } else {
+            isGlobalUser = false; // User is not global admin
         }
         
         const companySelect = document.getElementById('companyId');
@@ -211,6 +215,12 @@ async function loadCompanies() {
             option2.textContent = company.name;
             searchCompanySelect.appendChild(option2);
         });
+        
+        // Set default company for search filter
+        setDefaultSearchCompany(companies);
+        
+        // Set company field required for non-global users
+        setCompanyFieldRequired();
     } catch (error) {
         console.error('Error loading companies:', error);
         showAlert('Error loading companies', 'error');
@@ -220,10 +230,17 @@ async function loadCompanies() {
 // Perform search with filters
 async function performSearch() {
     try {
+        const companyId = document.getElementById('searchCompanyId').value;
+        
+        // For non-global users, company is mandatory
+        if (!isGlobalUser && !companyId) {
+            showAlert('Please select a company for search', 'error');
+            return;
+        }
+        
         const username = document.getElementById('searchUsername').value;
         const loginName = document.getElementById('searchLoginName').value;
         const email = document.getElementById('searchEmail').value;
-        const companyId = document.getElementById('searchCompanyId').value;
         
         let url = apiUrl;
         const params = new URLSearchParams();
@@ -274,7 +291,24 @@ function resetFilters() {
     document.getElementById('searchUsername').value = '';
     document.getElementById('searchLoginName').value = '';
     document.getElementById('searchEmail').value = '';
-    document.getElementById('searchCompanyId').value = '';
+    
+    // Reset company filter to user's default company
+    try {
+        const token = getAuthToken();
+        if (token) {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            const userCompanyId = payload.companyId;
+            if (userCompanyId) {
+                document.getElementById('searchCompanyId').value = userCompanyId;
+            } else {
+                document.getElementById('searchCompanyId').value = '';
+            }
+        } else {
+            document.getElementById('searchCompanyId').value = '';
+        }
+    } catch (e) {
+        document.getElementById('searchCompanyId').value = '';
+    }
     
     searchResults = [];
     renderSearchResults();
@@ -314,6 +348,7 @@ function createNewUser() {
     
     document.getElementById('formTitle').textContent = 'New User';
     document.getElementById('userForm').reset();
+    setCompanyFieldRequired();
     
     document.getElementById('userDetailsContainer').style.display = 'none';
     document.getElementById('userFormContainer').style.display = 'block';
@@ -345,6 +380,12 @@ function setupFormSubmission() {
         
         if (!username || !loginName || !password || !email) {
             showAlert('Please fill all required fields', 'error', 'detailsAlert');
+            return;
+        }
+        
+        // For non-global users, company is mandatory
+        if (!isGlobalUser && selected.length === 0) {
+            showAlert('Please select at least one company', 'error', 'detailsAlert');
             return;
         }
         
@@ -449,6 +490,7 @@ function editUser() {
     document.getElementById('loginName').value = currentViewingUser.loginName || '';
     document.getElementById('password').value = '';
     document.getElementById('email').value = currentViewingUser.email || '';
+    setCompanyFieldRequired();
     
     // Set multiple selected companies
     const opts = document.getElementById('companyId').options;
@@ -521,6 +563,53 @@ function getUserIdFromToken() {
 
 function getAuthToken() {
     return localStorage.getItem('jwtToken') || (JSON.parse(localStorage.getItem('loginResponse')||'{}').token || '');
+}
+
+// Set company field required based on user type
+function setCompanyFieldRequired() {
+    const companySelect = document.getElementById('companyId');
+    const requiredIndicator = document.getElementById('companyRequiredIndicator');
+    const requiredText = document.getElementById('companyRequiredText');
+    const searchCompanySelect = document.getElementById('searchCompanyId');
+    const searchCompanyRequiredIndicator = document.getElementById('searchCompanyRequiredIndicator');
+    
+    if (isGlobalUser) {
+        // Global users don't need to select a company
+        companySelect.removeAttribute('required');
+        searchCompanySelect.removeAttribute('required');
+        if (requiredIndicator) requiredIndicator.style.display = 'none';
+        if (requiredText) requiredText.style.display = 'none';
+        if (searchCompanyRequiredIndicator) searchCompanyRequiredIndicator.style.display = 'none';
+    } else {
+        // Non-global users must select a company
+        companySelect.setAttribute('required', 'required');
+        searchCompanySelect.setAttribute('required', 'required');
+        if (requiredIndicator) requiredIndicator.style.display = 'inline';
+        if (requiredText) requiredText.style.display = 'inline';
+        if (searchCompanyRequiredIndicator) searchCompanyRequiredIndicator.style.display = 'inline';
+    }
+}
+
+// Set default search company to logged-in user's company
+function setDefaultSearchCompany(companies) {
+    try {
+        const token = getAuthToken();
+        if (!token) return;
+        
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const userCompanyId = payload.companyId;
+        const searchCompanySelect = document.getElementById('searchCompanyId');
+        
+        if (userCompanyId && searchCompanySelect) {
+            // If user has a company in token, select it
+            searchCompanySelect.value = userCompanyId;
+        } else if (!isGlobalUser && companies.length > 0) {
+            // For non-global users without company in token, select first company
+            searchCompanySelect.value = companies[0].id;
+        }
+    } catch (error) {
+        console.error('Error setting default search company:', error);
+    }
 }
 
 async function logout() {
