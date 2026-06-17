@@ -416,10 +416,11 @@
                     </select>
                 </div>
                 <div class="filter-group">
-                    <label>Company:</label>
+                    <label>Company<span id="filterCompanyRequiredIndicator" style="color: red; display: none;">*</span></label>
                     <select id="filterCompanyId">
                         <option value="">All Companies</option>
                     </select>
+                    <span id="filterCompanyRequiredText" style="color: red; display: none; font-size: 12px; margin-top: 5px;">Required for non-global users.</span>
                 </div>
                 <div class="filter-group">
                     <label>Role:</label>

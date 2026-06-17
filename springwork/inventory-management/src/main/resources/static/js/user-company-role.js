@@ -5,6 +5,7 @@ let currentViewingMapping = null;
 let allUsers = [];
 let allRoles = [];
 let allCompanies = [];
+let isGlobalUser = false; // Flag to track if current user is global admin
 
 // API endpoints
 const apiUrl = '/user-company-roles';
@@ -164,10 +165,82 @@ async function loadData() {
         allCompanies = companies;
         allRoles = roles;
         
+        await loadUserCompanies();
+        setCompanyFieldRequired();
         populateFilterSelects();
+        setDefaultSearchCompany();
+        
     } catch (error) {
         console.error('Error loading data:', error);
         showAlert('Error loading data', 'error');
+    }
+}
+
+// Load current user's companies to determine if global
+async function loadUserCompanies() {
+    try {
+        const userId = getUserIdFromToken();
+        if (!userId) return;
+        
+        const response = await fetch(`/users/${userId}/companies`);
+        if (response.ok) {
+            const userCompanies = await response.json();
+            if (userCompanies && userCompanies.length > 0) {
+                isGlobalUser = false;
+            } else {
+                isGlobalUser = true;
+            }
+        } else {
+            isGlobalUser = true;
+        }
+    } catch (error) {
+        console.error('Error loading user companies:', error);
+        isGlobalUser = true;
+    }
+}
+
+// Set company field as required/optional based on user type
+function setCompanyFieldRequired() {
+    const filterCompanySelect = document.getElementById('filterCompanyId');
+    
+    if (isGlobalUser) {
+        filterCompanySelect.removeAttribute('required');
+        const indicator = document.getElementById('filterCompanyRequiredIndicator');
+        if (indicator) indicator.style.display = 'none';
+        const text = document.getElementById('filterCompanyRequiredText');
+        if (text) text.style.display = 'none';
+    } else {
+        filterCompanySelect.setAttribute('required', 'required');
+        const indicator = document.getElementById('filterCompanyRequiredIndicator');
+        if (indicator) indicator.style.display = 'inline';
+        const text = document.getElementById('filterCompanyRequiredText');
+        if (text) text.style.display = 'block';
+    }
+}
+
+// Set default search company to logged-in user's company
+function setDefaultSearchCompany() {
+    try {
+        const token = getAuthToken();
+        if (!token) return;
+        
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const userCompanyId = payload.companyId;
+        const searchCompanySelect = document.getElementById('filterCompanyId');
+        
+        if (userCompanyId && searchCompanySelect) {
+			//alert('test');
+            // If user has a company in token, select it
+            searchCompanySelect.value = userCompanyId;
+        } else if (!isGlobalUser && allCompanies.length > 0) {
+			//alert('com id '+allCompanies[0].id);
+            // For non-global users without company in token, select first company
+            // document.getElementById('filterCompanyId').value = allCompanies[0].id;
+            searchCompanySelect.value = allCompanies[0].id;
+          // alert('com id '+document.getElementById('filterCompanyId').value);
+        }
+    } catch (error) {
+        console.error('Error setting default search company:', error);
     }
 }
 
@@ -241,7 +314,7 @@ function populateFormSelects() {
 }
 
 // Helper functions
-function isGlobalUser(user) {
+function isUserGlobal(user) {
     return !user.companies || user.companies.length === 0;
 }
 
@@ -255,6 +328,12 @@ async function performSearch() {
         const userId = document.getElementById('filterUserId').value;
         const companyId = document.getElementById('filterCompanyId').value;
         const roleId = document.getElementById('filterRoleId').value;
+        
+        // Validate company selection for non-global users
+        if (!isGlobalUser && !companyId) {
+            showAlert('Please select a company. Company is required for non-global users.', 'error');
+            return;
+        }
         
         let url = apiUrl;
         const params = new URLSearchParams();
@@ -301,8 +380,27 @@ function renderSearchResults() {
 // Reset filters and clear search
 function resetFilters() {
     document.getElementById('filterUserId').value = '';
-    document.getElementById('filterCompanyId').value = '';
     document.getElementById('filterRoleId').value = '';
+    
+    // Reset company filter to user's default company
+    try {
+        const token = getAuthToken();
+        if (token) {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            const userCompanyId = payload.companyId;
+            if (userCompanyId) {
+                document.getElementById('filterCompanyId').value = userCompanyId;
+            } else if (!isGlobalUser && allCompanies.length > 0) {
+                document.getElementById('filterCompanyId').value = allCompanies[0].id;
+            } else {
+                document.getElementById('filterCompanyId').value = '';
+            }
+        } else {
+            document.getElementById('filterCompanyId').value = '';
+        }
+    } catch (e) {
+        document.getElementById('filterCompanyId').value = '';
+    }
     
     searchResults = [];
     renderSearchResults();
@@ -376,7 +474,7 @@ function setupFormSubmission() {
         
         // Validation: if user is selected, check if they're global
         const selectedUser = allUsers.find(u => u.id === parseInt(userId));
-        const isGlobal = isGlobalUser(selectedUser);
+        const isGlobal = isUserGlobal(selectedUser);
         
         if (!isGlobal && !companyId) {
             showAlert('Please select company for non-global users', 'error', 'detailsAlert');
@@ -524,6 +622,18 @@ function showAlert(message, type, alertId = 'alert') {
 
 function getAuthToken() {
     return localStorage.getItem('jwtToken') || (JSON.parse(localStorage.getItem('loginResponse')||'{}').token || '');
+}
+
+function getUserIdFromToken() {
+    try {
+        const token = getAuthToken();
+        if (!token) return null;
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        return payload.userId || payload.sub;
+    } catch (error) {
+        console.error('Error getting user ID from token:', error);
+        return null;
+    }
 }
 
 async function logout() {
