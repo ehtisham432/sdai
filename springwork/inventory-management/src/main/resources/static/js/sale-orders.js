@@ -350,12 +350,23 @@ function createNewSaleOrder() {
     currentEditingSO = null;
     document.getElementById('formTitle').textContent = 'New Sale Order';
     document.getElementById('soForm').reset();
+    
+    // Enable and reset invoice number field for new order
+    const invoiceField = document.getElementById('soNumber');
+    invoiceField.removeAttribute('readonly');
+    invoiceField.style.backgroundColor = '';
+    invoiceField.style.cursor = '';
+    
     formItems = [];
     updateItemsTable();
     
     document.getElementById('orderDetailsContainer').style.display = 'none';
     document.getElementById('createFormContainer').style.display = 'block';
     document.getElementById('itemsSection').style.display = 'block';
+    
+    // Auto-generate invoice number
+    const invoiceNumber = generateInvoiceNumber();
+    document.getElementById('soNumber').value = invoiceNumber;
     
     document.getElementById('soSaleDate').valueAsDate = new Date();
     
@@ -367,6 +378,15 @@ function createNewSaleOrder() {
     }
     
     switchTab('details-tab', null);
+    
+    // Auto-focus on product input field
+    setTimeout(() => {
+        const itemProductInput = document.getElementById('itemProduct');
+        if (itemProductInput) {
+            itemProductInput.focus();
+            itemProductInput.select();
+        }
+    }, 200);
 }
 
 // Close details tab and show form
@@ -378,6 +398,13 @@ function clearDetailsTab() {
     document.getElementById('orderDetailsContainer').style.display = 'none';
     document.getElementById('createFormContainer').style.display = 'block';
     document.getElementById('soForm').reset();
+    
+    // Enable and reset invoice number field
+    const invoiceField = document.getElementById('soNumber');
+    invoiceField.removeAttribute('readonly');
+    invoiceField.style.backgroundColor = '';
+    invoiceField.style.cursor = '';
+    
     updateItemsTable();
     document.getElementById('soSaleDate').valueAsDate = new Date();
 }
@@ -731,6 +758,9 @@ function editSaleOrder() {
     
     document.getElementById('formTitle').textContent = 'Edit Sale Order';
     document.getElementById('soNumber').value = currentViewingSO.invoiceNumber;
+    document.getElementById('soNumber').setAttribute('readonly', 'readonly');
+    document.getElementById('soNumber').style.backgroundColor = '#f5f5f5';
+    document.getElementById('soNumber').style.cursor = 'not-allowed';
     document.getElementById('soCompany').value = currentViewingSO.company?.id || '';
     document.getElementById('soCustomer').value = currentViewingSO.customer?.name || '';
     document.getElementById('soCustomerId').value = currentViewingSO.customer?.id || '';
@@ -1096,6 +1126,13 @@ async function logout() {
 let allProducts = [];
 
 loadProducts();
+
+// Generate unique invoice number
+function generateInvoiceNumber() {
+    const timestamp = Date.now();
+    const random = Math.floor(Math.random() * 10000);
+    return `INV-${timestamp}-${random}`;
+}
 
 // Setup product autocomplete functionality
 function setupProductAutocomplete(inputId, suggestionsId, companySelectId) {
