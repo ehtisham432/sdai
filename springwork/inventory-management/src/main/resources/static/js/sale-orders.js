@@ -1221,6 +1221,13 @@ function selectProduct(inputId, suggestionsId, productId, productName, companyNa
     
     input.value = productName;
     input.setAttribute('data-product-id', productId);
+
+    const quantityFieldId = inputId === 'detailsItemProduct' ? 'detailsItemQuantity' : 'itemQuantity';
+    const quantityInput = document.getElementById(quantityFieldId);
+    if (quantityInput && (!quantityInput.value || parseInt(quantityInput.value) <= 0)) {
+        quantityInput.value = 1;
+    }
+
     suggestionsList.classList.remove('active');
 }
 
