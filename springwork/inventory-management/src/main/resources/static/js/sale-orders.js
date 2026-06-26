@@ -1165,12 +1165,13 @@ function setupProductAutocomplete(inputId, suggestionsId, companySelectId) {
             return;
         }
         
-        suggestionsList.innerHTML = currentFiltered.map((product, index) =>
+        suggestionsList.innerHTML = currentFiltered.map((product) =>
             `<div class="autocomplete-item" onclick="selectProduct('${inputId}', '${suggestionsId}', ${product.id}, '${product.name.replace(/'/g, "\\'")}', '${product.company?.name?.replace(/'/g, "\\'") || ''}')">${product.name}</div>`
         ).join('');
         
         suggestionsList.classList.add('active');
-        selectedIndex = -1;
+        selectedIndex = 0;
+        updateHighlight(suggestionsList.querySelectorAll('.autocomplete-item'), selectedIndex);
     });
     
     input.addEventListener('keydown', function(e) {
@@ -1186,8 +1187,9 @@ function setupProductAutocomplete(inputId, suggestionsId, companySelectId) {
             updateHighlight(items, selectedIndex);
         } else if (e.key === 'Enter') {
             e.preventDefault();
-            if (selectedIndex >= 0 && selectedIndex < currentFiltered.length) {
-                const product = currentFiltered[selectedIndex];
+            const activeIndex = selectedIndex >= 0 ? selectedIndex : 0;
+            if (activeIndex >= 0 && activeIndex < currentFiltered.length) {
+                const product = currentFiltered[activeIndex];
                 selectProduct(inputId, suggestionsId, product.id, product.name, product.company?.name || '');
             }
         } else if (e.key === 'Escape') {
@@ -1348,12 +1350,13 @@ function setupProductAutocompleteForDetails(inputId, suggestionsId, companyId) {
             return;
         }
         
-        suggestionsList.innerHTML = currentFiltered.map((product, index) =>
+        suggestionsList.innerHTML = currentFiltered.map((product) =>
             `<div class="autocomplete-item" onclick="selectProduct('${inputId}', '${suggestionsId}', ${product.id}, '${product.name.replace(/'/g, "\\'")}', '${product.company?.name?.replace(/'/g, "\\'") || ''}')">${product.name}</div>`
         ).join('');
         
         suggestionsList.classList.add('active');
-        selectedIndex = -1;
+        selectedIndex = 0;
+        updateHighlight(suggestionsList.querySelectorAll('.autocomplete-item'), selectedIndex);
     });
     
     input.addEventListener('keydown', function(e) {
@@ -1369,8 +1372,9 @@ function setupProductAutocompleteForDetails(inputId, suggestionsId, companyId) {
             updateHighlight(items, selectedIndex);
         } else if (e.key === 'Enter') {
             e.preventDefault();
-            if (selectedIndex >= 0 && selectedIndex < currentFiltered.length) {
-                const product = currentFiltered[selectedIndex];
+            const activeIndex = selectedIndex >= 0 ? selectedIndex : 0;
+            if (activeIndex >= 0 && activeIndex < currentFiltered.length) {
+                const product = currentFiltered[activeIndex];
                 selectProduct(inputId, suggestionsId, product.id, product.name, product.company?.name || '');
             }
         } else if (e.key === 'Escape') {
