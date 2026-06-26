@@ -1223,9 +1223,20 @@ function selectProduct(inputId, suggestionsId, productId, productName, companyNa
     input.setAttribute('data-product-id', productId);
 
     const quantityFieldId = inputId === 'detailsItemProduct' ? 'detailsItemQuantity' : 'itemQuantity';
+    const unitPriceFieldId = inputId === 'detailsItemProduct' ? 'detailsItemUnitPrice' : 'itemUnitPrice';
     const quantityInput = document.getElementById(quantityFieldId);
+    const unitPriceInput = document.getElementById(unitPriceFieldId);
+
     if (quantityInput && (!quantityInput.value || parseInt(quantityInput.value) <= 0)) {
         quantityInput.value = 1;
+    }
+
+    const product = window.allProducts.find(p => String(p.id) === String(productId));
+    if (product && unitPriceInput) {
+        const defaultPrice = product.price ?? product.unitPrice ?? product.salePrice ?? product.sellingPrice;
+        if (defaultPrice != null) {
+            unitPriceInput.value = defaultPrice;
+        }
     }
 
     suggestionsList.classList.remove('active');
