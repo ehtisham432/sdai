@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadProducts();
     loadCustomers();
     setupFormSubmission();
+    setupQuantityEnterAdd('itemQuantity', 'itemProduct', 'itemUnitPrice', 'itemDiscount', addItemToSOForm);
 });
 
 // Load header menu from screens with display type D or HD and user company role
@@ -693,7 +694,31 @@ async function viewSaleOrder(id) {
 function loadProductsForDetailsForm() {
     if (currentViewingSO && currentViewingSO.company) {
         setupProductAutocompleteForDetails('detailsItemProduct', 'detailsItemProductSuggestions', currentViewingSO.company.id);
+        setupQuantityEnterAdd('detailsItemQuantity', 'detailsItemProduct', 'detailsItemUnitPrice', 'detailsItemDiscount', addItemToExistingSO);
     }
+}
+
+function setupQuantityEnterAdd(quantityInputId, productInputId, unitPriceInputId, discountInputId, addAction) {
+    const quantityInput = document.getElementById(quantityInputId);
+    if (!quantityInput) return;
+
+    quantityInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const productInput = document.getElementById(productInputId);
+            const productId = productInput?.getAttribute('data-product-id');
+            const quantity = parseInt(this.value, 10);
+            const unitPrice = parseFloat(document.getElementById(unitPriceInputId)?.value);
+            const discount = parseFloat(document.getElementById(discountInputId)?.value) || 0;
+
+            if (!productId || !quantity || quantity <= 0 || !unitPrice || unitPrice < 0) {
+                showAlert('Please fill all item fields with valid values', 'error');
+                return;
+            }
+
+            addAction();
+        }
+    });
 }
 
 // Add item to existing sale order
