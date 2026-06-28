@@ -1239,6 +1239,11 @@ function selectProduct(inputId, suggestionsId, productId, productName, companyNa
         }
     }
 
+    if (quantityInput) {
+        quantityInput.focus();
+        quantityInput.select();
+    }
+
     suggestionsList.classList.remove('active');
 }
 
