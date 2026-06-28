@@ -24,9 +24,19 @@ public class SaleOrderService {
     
     @Autowired
     private ProductRepository productRepository;
+    
+    @Autowired
+    private CustomerRepository customerRepository;
+    
+    @Autowired
+    private CompanyRepository companyRepository;
+    
+    @Autowired
+    private UserRepository userRepository;
 
     // Create a new sale order
     public SaleOrder createSaleOrder(SaleOrder saleOrder) {
+        attachOrderReferences(saleOrder);
         saleOrder.setCreatedAt(new Date());
         saleOrder.setUpdatedAt(new Date());
         if (saleOrder.getStatus() == null) {
@@ -60,7 +70,7 @@ public class SaleOrderService {
         if (existing.isPresent()) {
             SaleOrder so = existing.get();
             so.setInvoiceNumber(updatedSO.getInvoiceNumber());
-            so.setCustomer(updatedSO.getCustomer());
+            so.setCustomer(loadCustomerById(updatedSO.getCustomer() != null ? updatedSO.getCustomer().getId() : null));
             so.setSaleDate(updatedSO.getSaleDate());
             so.setDueDate(updatedSO.getDueDate());
             so.setStatus(updatedSO.getStatus());
@@ -230,5 +240,31 @@ public class SaleOrderService {
         saleOrder.setDiscountAmount(totalDiscount);
         saleOrder.setTaxAmount(totalTax);
         saleOrder.setFinalAmount(subtotal - totalDiscount + totalTax);
+    }
+
+    private void attachOrderReferences(SaleOrder saleOrder) {
+        if (saleOrder == null) {
+            return;
+        }
+        if (saleOrder.getCompany() != null && saleOrder.getCompany().getId() != null) {
+            saleOrder.setCompany(companyRepository.findById(saleOrder.getCompany().getId()).orElse(null));
+        }
+        if (saleOrder.getCreatedBy() != null && saleOrder.getCreatedBy().getId() != null) {
+            saleOrder.setCreatedBy(userRepository.findById(saleOrder.getCreatedBy().getId()).orElse(null));
+        }
+        if (saleOrder.getCustomer() != null) {
+            saleOrder.setCustomer(loadCustomerById(saleOrder.getCustomer().getId()));
+        }
+        if (saleOrder.getItems() != null) {
+            for (SaleOrderItem item : saleOrder.getItems()) {
+                if (item.getProduct() != null && item.getProduct().getId() != null) {
+                    productRepository.findById(item.getProduct().getId()).ifPresent(item::setProduct);
+                }
+            }
+        }
+    }
+
+    private Customer loadCustomerById(Long id) {
+        return id != null ? customerRepository.findById(id).orElse(null) : null;
     }
 }

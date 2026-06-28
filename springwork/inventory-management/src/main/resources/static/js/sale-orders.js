@@ -506,7 +506,7 @@ function setupFormSubmission() {
         const status = document.getElementById('soStatus').value;
         const notes = document.getElementById('soNotes').value;
         
-        if (!invoiceNumber || !companyId || !customerId || !saleDate || formItems.length === 0) {
+        if (!invoiceNumber || !companyId || !saleDate || formItems.length === 0) {
             showAlert('Please fill all required fields and add at least one item', 'error');
             return;
         }
@@ -518,7 +518,6 @@ function setupFormSubmission() {
         const saleOrderData = {
             invoiceNumber: invoiceNumber,
             company: { id: companyId },
-            customer: { id: customerId },
             createdBy: { id: getUserIdFromToken() },
             saleDate: new Date(saleDate),
             dueDate: dueDate ? new Date(dueDate) : null,
@@ -537,6 +536,9 @@ function setupFormSubmission() {
                 subtotal: item.subtotal
             }))
         };
+        if (customerId) {
+            saleOrderData.customer = { id: customerId };
+        }
         
         try {
             let response;
@@ -717,10 +719,11 @@ function setupQuantityEnterAdd(quantityInputId, productInputId, unitPriceInputId
             }
 
             addAction();
-            if(productInput){
-	             productInput.focus();
-	             productInput.select();
-             }
+            
+            setTimeout(() => {
+                productInput.focus();
+                productInput.select();
+            }, 100);
         }
     });
 }

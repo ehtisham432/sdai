@@ -19,7 +19,7 @@ public class SaleOrder {
     private User createdBy;
     
     @ManyToOne
-    @JoinColumn(name = "customer_id", nullable = false)
+    @JoinColumn(name = "customer_id", nullable = true)
     private Customer customer;
     
     private String invoiceNumber;
