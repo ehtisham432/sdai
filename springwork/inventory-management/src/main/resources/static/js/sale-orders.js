@@ -717,6 +717,10 @@ function setupQuantityEnterAdd(quantityInputId, productInputId, unitPriceInputId
             }
 
             addAction();
+            if(productInput){
+	             productInput.focus();
+	             productInput.select();
+             }
         }
     });
 }
