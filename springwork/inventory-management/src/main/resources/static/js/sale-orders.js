@@ -1186,10 +1186,11 @@ function setupProductAutocomplete(inputId, suggestionsId, companySelectId) {
             return;
         }
         
-        currentFiltered = window.allProducts.filter(p =>
-            p.name.toLowerCase().includes(value) &&
-            (!companySelect.value || !p.company || p.company.id == companySelect.value)
-        );
+        currentFiltered = window.allProducts.filter(p => {
+            const label = getProductSuggestionLabel(p).toLowerCase();
+            return label.includes(value) &&
+                (!companySelect.value || !p.company || p.company.id == companySelect.value);
+        });
         
         if (currentFiltered.length === 0) {
             suggestionsList.classList.remove('active');
@@ -1197,9 +1198,11 @@ function setupProductAutocomplete(inputId, suggestionsId, companySelectId) {
             return;
         }
         
-        suggestionsList.innerHTML = currentFiltered.map((product) =>
-            `<div class="autocomplete-item" onclick="selectProduct('${inputId}', '${suggestionsId}', ${product.id}, '${product.name.replace(/'/g, "\\'")}', '${product.company?.name?.replace(/'/g, "\\'") || ''}')">${product.name}</div>`
-        ).join('');
+        suggestionsList.innerHTML = currentFiltered.map((product) => {
+            const label = escapeHtml(getProductSuggestionLabel(product));
+            const name = escapeHtml(product.name);
+            return `<div class="autocomplete-item" onclick="selectProduct('${inputId}', '${suggestionsId}', ${product.id}, '${name.replace(/'/g, "\\'")}', '${product.company?.name?.replace(/'/g, "\\'") || ''}')">${label}</div>`;
+        }).join('');
         
         suggestionsList.classList.add('active');
         selectedIndex = 0;
@@ -1245,6 +1248,21 @@ function updateHighlight(items, selectedIndex) {
             item.classList.remove('selected');
         }
     });
+}
+
+function getProductSuggestionLabel(product) {
+    const name = product?.name || '';
+    const typeName = product?.productType?.name || '';
+    return typeName ? `${name} - ${typeName}` : name;
+}
+
+function escapeHtml(value) {
+    return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
 function selectProduct(inputId, suggestionsId, productId, productName, companyName) {
@@ -1394,10 +1412,11 @@ function setupProductAutocompleteForDetails(inputId, suggestionsId, companyId) {
             return;
         }
         
-        currentFiltered = window.allProducts.filter(p =>
-            p.name.toLowerCase().includes(value) &&
-            (!companyId || !p.company || p.company.id == companyId)
-        );
+        currentFiltered = window.allProducts.filter(p => {
+            const label = getProductSuggestionLabel(p).toLowerCase();
+            return label.includes(value) &&
+                (!companyId || !p.company || p.company.id == companyId);
+        });
         
         if (currentFiltered.length === 0) {
             suggestionsList.classList.remove('active');
@@ -1405,9 +1424,11 @@ function setupProductAutocompleteForDetails(inputId, suggestionsId, companyId) {
             return;
         }
         
-        suggestionsList.innerHTML = currentFiltered.map((product) =>
-            `<div class="autocomplete-item" onclick="selectProduct('${inputId}', '${suggestionsId}', ${product.id}, '${product.name.replace(/'/g, "\\'")}', '${product.company?.name?.replace(/'/g, "\\'") || ''}')">${product.name}</div>`
-        ).join('');
+        suggestionsList.innerHTML = currentFiltered.map((product) => {
+            const label = escapeHtml(getProductSuggestionLabel(product));
+            const name = escapeHtml(product.name);
+            return `<div class="autocomplete-item" onclick="selectProduct('${inputId}', '${suggestionsId}', ${product.id}, '${name.replace(/'/g, "\\'")}', '${product.company?.name?.replace(/'/g, "\\'") || ''}')">${label}</div>`;
+        }).join('');
         
         suggestionsList.classList.add('active');
         selectedIndex = 0;
