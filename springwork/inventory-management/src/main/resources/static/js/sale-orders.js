@@ -1393,51 +1393,246 @@ function selectCustomer(inputId, suggestionsId, customerId, customerName) {
     suggestionsList.classList.remove('active');
 }
 
-// Setup product autocomplete for details form (filtered by company ID)
+// ==================== PRINT FUNCTIONALITY ====================
+
+function printSaleOrder() {
+    if (!currentViewingSO) {
+        alert('No sale order selected for printing');
+        return;
+    }
+    
+    const modal = document.getElementById('printInvoiceModal');
+    const content = document.getElementById('printInvoiceContent');
+    
+    const invoiceHTML = generateInvoiceHTML(currentViewingSO);
+    content.innerHTML = invoiceHTML;
+    
+    modal.style.display = 'flex';
+}
+
+function generateInvoiceHTML(saleOrder) {
+    const company = saleOrder.company || {};
+    const customer = saleOrder.customer;
+    const user = saleOrder.user || {};
+    
+    const invoiceDate = new Date(saleOrder.saleDate).toLocaleDateString();
+    const dueDate = saleOrder.dueDate ? new Date(saleOrder.dueDate).toLocaleDateString() : 'N/A';
+    
+    const subtotal = saleOrder.subtotal || 0;
+    const discount = saleOrder.discount || 0;
+    const tax = saleOrder.tax || 0;
+    const finalAmount = saleOrder.finalAmount || 0;
+    
+    const itemsHTML = (saleOrder.items || []).map(item => `
+        <tr>
+            <td style="padding: 10px; border-bottom: 1px solid #eee;">${escapeHtml(item.product?.name || 'N/A')}</td>
+            <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity || 0}</td>
+            <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">Rs. ${(item.unitPrice || 0).toFixed(2)}</td>
+            <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">Rs. ${((item.quantity || 0) * (item.unitPrice || 0)).toFixed(2)}</td>
+        </tr>
+    `).join('');
+    
+    return `
+        <style>
+            .invoice-container { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; color: #333; }
+            .invoice-header { text-align: center; padding-bottom: 20px; border-bottom: 3px solid #2c3e50; margin-bottom: 30px; }
+            .invoice-header h1 { margin: 0; color: #2c3e50; font-size: 28px; }
+            .invoice-header p { margin: 5px 0; color: #666; }
+            .invoice-meta { display: flex; justify-content: space-between; margin-bottom: 30px; flex-wrap: wrap; }
+            .meta-section { flex: 1; min-width: 250px; margin-right: 20px; }
+            .meta-label { font-weight: bold; color: #2c3e50; margin-bottom: 5px; }
+            .meta-value { color: #555; margin: 3px 0; }
+            .items-table { width: 100%; border-collapse: collapse; margin: 30px 0; }
+            .items-table th { background: #f5f5f5; padding: 12px; text-align: left; border: 1px solid #ddd; font-weight: bold; color: #2c3e50; }
+            .invoice-totals { float: right; width: 300px; margin-top: 20px; }
+            .total-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
+            .total-row.final { font-size: 18px; font-weight: bold; color: #2c3e50; border-top: 2px solid #2c3e50; border-bottom: 2px solid #2c3e50; padding: 12px 0; }
+            .invoice-notes { clear: both; margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; }
+            .notes-label { font-weight: bold; color: #2c3e50; margin-bottom: 8px; }
+            .notes-text { color: #555; white-space: pre-wrap; }
+        </style>
+        
+        <div class="invoice-container">
+            <div class="invoice-header">
+                <h1>INVOICE</h1>
+                <p>${escapeHtml(company.name || 'Company')}</p>
+            </div>
+            
+            <div class="invoice-meta">
+                <div class="meta-section">
+                    <div class="meta-label">FROM:</div>
+                    <div class="meta-value">${escapeHtml(company.name || 'N/A')}</div>
+                    <div class="meta-value">${escapeHtml(company.address || '')}</div>
+                    <div class="meta-value">${escapeHtml(company.phone || '')}</div>
+                </div>
+                
+                <div class="meta-section">
+                    <div class="meta-label">BILL TO:</div>
+                    <div class="meta-value">${escapeHtml(customer?.name || 'Walk-in Customer')}</div>
+                    ${customer ? `<div class="meta-value">${escapeHtml(customer.address || '')}</div>` : ''}
+                    ${customer ? `<div class="meta-value">${escapeHtml(customer.phone || '')}</div>` : ''}
+                </div>
+                
+                <div class="meta-section">
+                    <div class="meta-label">INVOICE #:</div>
+                    <div class="meta-value" style="font-weight: bold; font-size: 16px;">${escapeHtml(saleOrder.invoiceNumber || 'N/A')}</div>
+                    <div style="margin-top: 10px;">
+                        <div class="meta-label">DATE:</div>
+                        <div class="meta-value">${invoiceDate}</div>
+                    </div>
+                    <div style="margin-top: 10px;">
+                        <div class="meta-label">DUE DATE:</div>
+                        <div class="meta-value">${dueDate}</div>
+                    </div>
+                </div>
+            </div>
+            
+            <table class="items-table">
+                <thead>
+                    <tr>
+                        <th>Item Description</th>
+                        <th style="text-align: center; width: 100px;">Quantity</th>
+                        <th style="text-align: right; width: 120px;">Unit Price</th>
+                        <th style="text-align: right; width: 120px;">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${itemsHTML}
+                </tbody>
+            </table>
+            
+            <div class="invoice-totals">
+                <div class="total-row">
+                    <span>Subtotal:</span>
+                    <span>Rs. ${subtotal.toFixed(2)}</span>
+                </div>
+                ${discount > 0 ? `
+                    <div class="total-row">
+                        <span>Discount:</span>
+                        <span>-Rs. ${discount.toFixed(2)}</span>
+                    </div>
+                ` : ''}
+                ${tax > 0 ? `
+                    <div class="total-row">
+                        <span>Tax (${(tax / (subtotal - discount) * 100).toFixed(2)}%):</span>
+                        <span>Rs. ${tax.toFixed(2)}</span>
+                    </div>
+                ` : ''}
+                <div class="total-row final">
+                    <span>TOTAL:</span>
+                    <span>Rs. ${finalAmount.toFixed(2)}</span>
+                </div>
+            </div>
+            
+            <div style="clear: both; margin-top: 50px; border-top: 1px solid #ddd; padding-top: 20px;">
+                <div style="display: flex; justify-content: space-between;">
+                    <div>
+                        <p style="margin: 0; font-weight: bold; color: #2c3e50;">Payment Method:</p>
+                        <p style="margin: 5px 0; color: #555;">${escapeHtml(saleOrder.paymentMethod || 'Not specified')}</p>
+                    </div>
+                    <div style="text-align: right;">
+                        <p style="margin: 0; font-weight: bold; color: #2c3e50;">Status:</p>
+                        <p style="margin: 5px 0; color: #555; padding: 5px 10px; background: ${saleOrder.status === 'COMPLETED' ? '#d4edda' : '#fff3cd'}; border-radius: 4px;">${escapeHtml(saleOrder.status || 'PENDING')}</p>
+                    </div>
+                </div>
+            </div>
+            
+            ${saleOrder.notes ? `
+                <div class="invoice-notes">
+                    <div class="notes-label">Notes:</div>
+                    <div class="notes-text">${escapeHtml(saleOrder.notes)}</div>
+                </div>
+            ` : ''}
+            
+            <div style="margin-top: 50px; text-align: center; color: #999; font-size: 12px; border-top: 1px solid #ddd; padding-top: 20px;">
+                <p>Thank you for your business!</p>
+            </div>
+        </div>
+    `;
+}
+
+function closePrintModal() {
+    const modal = document.getElementById('printInvoiceModal');
+    modal.style.display = 'none';
+}
+
+function printInvoiceNow() {
+    const modal = document.getElementById('printInvoiceModal');
+    const printContent = document.getElementById('printInvoiceContent');
+    
+    // Create a new window for printing
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Invoice Print</title>
+            <style>
+                @media print {
+                    body { margin: 0; padding: 0; }
+                    .no-print { display: none; }
+                }
+                body { font-family: Arial, sans-serif; margin: 20px; }
+            </style>
+        </head>
+        <body>
+            ${printContent.innerHTML}
+            <script>
+                window.print();
+                window.onafterprint = function() {
+                    window.close();
+                };
+            </script>
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
+}
+
 function setupProductAutocompleteForDetails(inputId, suggestionsId, companyId) {
     const input = document.getElementById(inputId);
     const suggestionsList = document.getElementById(suggestionsId);
-    
-    if (!input) return;
-    
+
+    if (!input || !suggestionsList) return;
+
     let selectedIndex = -1;
     let currentFiltered = [];
-    
+
     input.addEventListener('input', function() {
         const value = this.value.toLowerCase();
-        
+
         if (value.length < 1) {
             suggestionsList.classList.remove('active');
             selectedIndex = -1;
             return;
         }
-        
+
         currentFiltered = window.allProducts.filter(p => {
             const label = getProductSuggestionLabel(p).toLowerCase();
-            return label.includes(value) &&
-                (!companyId || !p.company || p.company.id == companyId);
+            return label.includes(value) && (!companyId || !p.company || p.company.id == companyId);
         });
-        
+
         if (currentFiltered.length === 0) {
             suggestionsList.classList.remove('active');
             selectedIndex = -1;
             return;
         }
-        
+
         suggestionsList.innerHTML = currentFiltered.map((product) => {
             const label = escapeHtml(getProductSuggestionLabel(product));
             const name = escapeHtml(product.name);
             return `<div class="autocomplete-item" onclick="selectProduct('${inputId}', '${suggestionsId}', ${product.id}, '${name.replace(/'/g, "\\'")}', '${product.company?.name?.replace(/'/g, "\\'") || ''}')">${label}</div>`;
         }).join('');
-        
+
         suggestionsList.classList.add('active');
         selectedIndex = 0;
         updateHighlight(suggestionsList.querySelectorAll('.autocomplete-item'), selectedIndex);
     });
-    
+
     input.addEventListener('keydown', function(e) {
         const items = suggestionsList.querySelectorAll('.autocomplete-item');
-        
+
         if (e.key === 'ArrowDown') {
             e.preventDefault();
             selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
@@ -1459,7 +1654,7 @@ function setupProductAutocompleteForDetails(inputId, suggestionsId, companyId) {
             selectedIndex = -1;
         }
     });
-    
+
     input.addEventListener('blur', function() {
         setTimeout(() => suggestionsList.classList.remove('active'), 200);
     });
